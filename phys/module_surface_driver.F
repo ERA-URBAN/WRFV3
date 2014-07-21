@@ -157,6 +157,7 @@ CONTAINS
      &          ,declin,solcon,coszen,hrang,xlat_urb2d                & !I solar/urban
      &          ,num_roof_layers, num_wall_layers                     & !I urban
      &          ,num_road_layers, dzr, dzb, dzg                       & !I urban
+     &          ,tc2m_urb2d                                           & !JJA urban
      &          ,tr_urb2d,tb_urb2d,tg_urb2d,tc_urb2d,qc_urb2d         & !H urban
      &          ,uc_urb2d                                             & !H urban
      &          ,xxxr_urb2d,xxxb_urb2d,xxxg_urb2d,xxxc_urb2d          & !H urban
@@ -1125,6 +1126,8 @@ CONTAINS
      REAL, OPTIONAL, DIMENSION(1:num_soil_layers), INTENT(IN) :: DZR          !urban
      REAL, OPTIONAL, DIMENSION(1:num_soil_layers), INTENT(IN) :: DZB          !urban
      REAL, OPTIONAL, DIMENSION(1:num_soil_layers), INTENT(IN) :: DZG          !urban
+
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT)  :: TC2M_URB2D !JJA urban
 
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT)  :: TR_URB2D !urban
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT)  :: TB_URB2D !urban
@@ -2577,6 +2580,7 @@ CONTAINS
                 DRELR_URB2D,DRELB_URB2D,DRELG_URB2D,            & !H urban
                 FLXHUMR_URB2D,FLXHUMB_URB2D,FLXHUMG_URB2D,      & !H urban
                 julian, julyr,                                  & !H urban
+                tc2m_urb2d,                                     & !JJA urban
                 FRC_URB2D, UTYPE_URB2D,                         & !I urban
                 num_urban_layers,                               & !I multi-layer urban
                 num_urban_hi,                                   & !I multi-layer urban
