@@ -73,6 +73,7 @@ CONTAINS
                   DRELR_URB2D,DRELB_URB2D,DRELG_URB2D,          & !H urban
                   FLXHUMR_URB2D,FLXHUMB_URB2D,FLXHUMG_URB2D,    & !H urban
                   julian, julyr,                                & !H urban
+                  tc2m_urb2d,                                   & !JJA urban
                   FRC_URB2D,UTYPE_URB2D,                        & !O
                   num_urban_layers,                             & !I multi-layer urban
                   num_urban_hi,                                 & !I multi-layer urban
@@ -448,6 +449,7 @@ CONTAINS
      REAL :: COSZ_URB     ! cosz
      REAL :: OMG_URB      ! hour angle
      REAL :: ZNT_URB      ! roughness length                       [m]
+     REAL :: TC2M_URB
      REAL :: TR_URB
      REAL :: TB_URB
      REAL :: TG_URB
@@ -507,6 +509,8 @@ CONTAINS
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: RN_URB2D
 !
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TS_URB2D
+
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TC2M_URB2D
 
      REAL, OPTIONAL, DIMENSION( ims:ime, 1:num_roof_layers, jms:jme ), INTENT(INOUT) :: TRL_URB3D
      REAL, OPTIONAL, DIMENSION( ims:ime, 1:num_wall_layers, jms:jme ), INTENT(INOUT) :: TBL_URB3D
@@ -1165,6 +1169,7 @@ CONTAINS
 
             LSOLAR_URB = .FALSE.
 
+            TC2M_URB = TC2M_URB2D(I,J)
             TR_URB = TR_URB2D(I,J)
             TB_URB = TB_URB2D(I,J)
             TG_URB = TG_URB2D(I,J)
@@ -1247,6 +1252,7 @@ CONTAINS
                        ZA_URB,DECLIN_URB,COSZ_URB,OMG_URB,              & ! I
                        XLAT_URB,DELT_URB,ZNT_URB,                       & ! I
                        CHS_URB, CHS2_URB,                               & ! I
+                       TC2M_URB,                                        & ! JJA
                        TR_URB, TB_URB, TG_URB, TC_URB, QC_URB,UC_URB,   & ! H
                        TRL_URB,TBL_URB,TGL_URB,                         & ! H
                        XXXR_URB, XXXB_URB, XXXG_URB, XXXC_URB,          & ! H
