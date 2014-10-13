@@ -74,6 +74,7 @@ CONTAINS
                   FLXHUMR_URB2D,FLXHUMB_URB2D,FLXHUMG_URB2D,    & !H urban
                   julian, julyr,                                & !H urban
                   tc2m_urb2d,                                   & !JJA urban
+                  tp2m_urb2d,                                   & !JJA urban
                   utci_urb2d,                                   & !JJA urban
                   FRC_URB2D,UTYPE_URB2D,                        & !O
                   num_urban_layers,                             & !I multi-layer urban
@@ -451,6 +452,7 @@ CONTAINS
      REAL :: OMG_URB      ! hour angle
      REAL :: ZNT_URB      ! roughness length                       [m]
      REAL :: TC2M_URB
+     REAL :: TP2M_URB
      REAL :: UTCI_URB
      REAL :: TR_URB
      REAL :: TB_URB
@@ -513,6 +515,7 @@ CONTAINS
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TS_URB2D
 
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TC2M_URB2D
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TP2M_URB2D
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: UTCI_URB2D
 
      REAL, OPTIONAL, DIMENSION( ims:ime, 1:num_roof_layers, jms:jme ), INTENT(INOUT) :: TRL_URB3D
@@ -1173,6 +1176,7 @@ CONTAINS
             LSOLAR_URB = .FALSE.
 
             TC2M_URB = TC2M_URB2D(I,J)
+            TP2M_URB = TP2M_URB2D(I,J)
             UTCI_URB = UTCI_URB2D(I,J)
             TR_URB = TR_URB2D(I,J)
             TB_URB = TB_URB2D(I,J)
@@ -1257,6 +1261,7 @@ CONTAINS
                        XLAT_URB,DELT_URB,ZNT_URB,                       & ! I
                        CHS_URB, CHS2_URB,                               & ! I
                        TC2M_URB,                                        & ! JJA
+                       TP2M_URB,                                        & ! JJA
                        UTCI_URB,                                        & ! JJA
                        TR_URB, TB_URB, TG_URB, TC_URB, QC_URB,UC_URB,   & ! H
                        TRL_URB,TBL_URB,TGL_URB,                         & ! H
@@ -1334,6 +1339,7 @@ CONTAINS
 ! Renew Urban State Varialbes
 
             TC2M_URB2D(I,J) = TC2M_URB
+            TP2M_URB2D(I,J) = TP2M_URB
             UTCI_URB2D(I,J) = UTCI_URB
 
             TR_URB2D(I,J) = TR_URB
