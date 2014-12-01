@@ -161,7 +161,7 @@ CONTAINS
      &          ,tp2m_urb2d                                           & !JJA urban
      &          ,utci_urb2d                                           & !JJA urban
      &          ,tr_urb2d,tb_urb2d,tg_urb2d,tc_urb2d,qc_urb2d         & !H urban
-     &          ,uc_urb2d                                             & !H urban
+     &          ,uc_urb2d,antheat_urb2d                               & !H urban
      &          ,xxxr_urb2d,xxxb_urb2d,xxxg_urb2d,xxxc_urb2d          & !H urban
      &          ,cmcr_urb2d,tgr_urb2d,tgrl_urb3d,smr_urb3d            & !H urban
      &          ,julian,julyr,drelr_urb2d,drelb_urb2d,drelg_urb2d     & !H urban
@@ -1139,6 +1139,7 @@ CONTAINS
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: TC_URB2D !urban
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: QC_URB2D !urban
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: UC_URB2D !urban
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: ANTHEAT_URB2D !urban
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: XXXR_URB2D !urban
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: XXXB_URB2D !urban
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT):: XXXG_URB2D !urban
@@ -2569,7 +2570,7 @@ CONTAINS
                 ,cmr_sfcdif,chr_sfcdif,cmc_sfcdif,chc_sfcdif    &
                 ,cmgr_sfcdif,chgr_sfcdif                        &
                 ,tr_urb2d,tb_urb2d,tg_urb2d,tc_urb2d,qc_urb2d,  & !H urban
-                uc_urb2d,                                       & !H urban
+                uc_urb2d, antheat_urb2d,                        & !H urban
                 xxxr_urb2d,xxxb_urb2d,xxxg_urb2d,xxxc_urb2d,    & !H urban
                 trl_urb3d,tbl_urb3d,tgl_urb3d,                  & !H urban
                 sh_urb2d,lh_urb2d,g_urb2d,rn_urb2d,ts_urb2d,    & !H urban
@@ -3325,7 +3326,7 @@ CONTAINS
                ,cmr_sfcdif,chr_sfcdif,cmc_sfcdif,chc_sfcdif    &
                ,cmgr_sfcdif,chgr_sfcdif                        &
                ,tr_urb2d,tb_urb2d,tg_urb2d,tc_urb2d,qc_urb2d,  & !H urban
-                uc_urb2d,                                       & !H urban
+                uc_urb2d,  antheat_urb2d,                       & !H urban
                 xxxr_urb2d,xxxb_urb2d,xxxg_urb2d,xxxc_urb2d,    & !H urban
                 trl_urb3d,tbl_urb3d,tgl_urb3d,                  & !H urban
                 sh_urb2d,lh_urb2d,g_urb2d,rn_urb2d,ts_urb2d,    & !H urban

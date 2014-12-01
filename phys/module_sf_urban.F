@@ -330,7 +330,7 @@ MODULE module_sf_urban
                     TC2M,                                             & ! JJA
                     TP2M,                                             & ! JJA
                     UTCI,                                             & ! JJA
-                    TR, TB, TG, TC, QC, UC,                           & ! H
+                    TR, TB, TG, TC, QC, UC, ANTHEAT,                  & ! H
                     TRL,TBL,TGL,                                      & ! H
                     XXXR, XXXB, XXXG, XXXC,                           & ! H
                     TS,QS,SH,LH,LH_KINEMATIC,                         & ! O
@@ -467,7 +467,7 @@ MODULE module_sf_urban
    REAL, INTENT(INOUT):: TC2M                          ! 2 meter canyon temperature [K]
    REAL, INTENT(INOUT):: TP2M                          ! 2 meter canyon temperature in park [K]
    REAL, INTENT(INOUT):: UTCI                          ! Universal thermal comfort index [-]
-   REAL, INTENT(INOUT):: TR, TB, TG, TC, QC, UC
+   REAL, INTENT(INOUT):: TR, TB, TG, TC, QC, UC,ANTHEAT
    REAL, INTENT(INOUT):: XXXR, XXXB, XXXG, XXXC
 
    REAL, DIMENSION(1:num_roof_layers), INTENT(INOUT) :: TRL
@@ -692,6 +692,7 @@ MODULE module_sf_urban
 
 ! Miao, 2007/01/17, cal. ah
    if(ahoption==1) AH=AH*ahdiuprf(tloc)
+   if(ahoption==2) AH=ANTHEAT
 
 ! Yang, 2014/10/08, cal. alh
    Kalh=0
@@ -4290,5 +4291,6 @@ SUBROUTINE SFCDIF_URB (ZLM,Z0,THZ0,THLM,SFCSPD,AKANDA,AKMS,AKHS,RLMO,CD)
 
 ! ----------------------------------------------------------------------
    END SUBROUTINE UTCI_APPROX
+! ----------------------------------------------------------------------
 !===========================================================================
 END MODULE module_sf_urban
