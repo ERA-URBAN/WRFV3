@@ -701,9 +701,9 @@ MODULE module_sf_urban
    if(alhoption==1) ALH = ALH*alhdiuprf(tloc2)*alhseason(Kalh)
 
    IF( ZDC+Z0C+2. >= ZA) THEN
-    WRITE(mesg,*) "warning: ZDC higher than the 1st WRF level, adjusting ", ZDC, ZA-2.-Z0C-0.1 
+    WRITE(mesg,*) "warning: ZDC higher than 1st WRF level, adjusting ", ZDC, ZA - Z0C - 4.
     CALL wrf_message ( mesg )
-    ZDC = ZA - 2. - Z0C - 0.1
+    ZDC = ZA - Z0C - 4.
    END IF
 
    IF(.NOT.LSOLAR) THEN
