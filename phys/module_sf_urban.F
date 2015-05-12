@@ -297,23 +297,7 @@ MODULE module_sf_urban
 !     1999/08/25 LCM , developed by H. Kusaka of CRIEPI (Univ.Tsukuba)
 !
 !===============================================================================
-!
-!  subroutine urban:
-!
-!===============================================================================
 
-   SUBROUTINE urban(LSOLAR,                                           & ! L
-                    num_roof_layers,num_wall_layers,num_road_layers,  & ! I
-                    DZR,DZB,DZG,                                      & ! I
-                    UTYPE,TA,QA,UA,U1,V1,SSG,SSGD,SSGQ,LLG,RAIN,RHOO, & ! I
-                    ZA,DECLIN,COSZ,OMG,XLAT,DELT,ZNT,                 & ! I
-                    CHS, CHS2,                                        & ! I
-!     2006/06          modified by H. Kusaka (Univ. Tsukuba), M. Tewari 
-!     2005/10/26,      modified by Fei Chen, Mukul Tewari
-!     2003/07/21 WRF , modified  by H. Kusaka of CRIEPI (NCAR/MMM)
-!     2001/08/26 PhD , modified  by H. Kusaka of CRIEPI (Univ.Tsukuba)
-!     1999/08/25 LCM , developed by H. Kusaka of CRIEPI (Univ.Tsukuba)
-!
 !===============================================================================
 !
 !  subroutine urban:
@@ -1407,7 +1391,7 @@ ENDIF
    FLXUV  = ( R*CDR + RW*CDC )*UA*UA
    FLXG =   ( R*G0R + W*G0B + RW*G0G )
    LNET =     R*RR + W*RB + RW*RG
-   FLXTHC  = ( W*FLXTHB  + RW*FLXTHG) 
+ endif
 
 !----------------------------------------------------------------------------
 ! Convert Unit: FLUXES and u* T* q*  --> WRF
