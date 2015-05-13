@@ -1181,6 +1181,8 @@ CONTAINS
             TC2M_URB = TC2M_URB2D(I,J)
             TP2M_URB = TP2M_URB2D(I,J)
             UTCI_URB = UTCI_URB2D(I,J)
+            ANTHEAT_URB = ANTHEAT_URB2D(I,J)
+            
             TR_URB = TR_URB2D(I,J)
             TB_URB = TB_URB2D(I,J)
             TG_URB = TG_URB2D(I,J)
@@ -1188,7 +1190,6 @@ CONTAINS
             QC_URB = QC_URB2D(I,J)
             UC_URB = UC_URB2D(I,J)
 
-            ANTHEAT_URB = ANTHEAT_URB2D(I,J)
             TGR_URB   = TGR_URB2D(I,J)
             CMCR_URB  = CMCR_URB2D(I,J)
             FLXHUMR_URB = FLXHUMR_URB2D(I,J)
@@ -1356,6 +1357,7 @@ CONTAINS
             TC2M_URB2D(I,J) = TC2M_URB
             TP2M_URB2D(I,J) = TP2M_URB
             UTCI_URB2D(I,J) = UTCI_URB
+            ANTHEAT_URB2D(I,J) = ANTHEAT_URB
 
             TR_URB2D(I,J) = TR_URB
             TB_URB2D(I,J) = TB_URB
@@ -2153,8 +2155,9 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   CMR_SFCDIF,CHR_SFCDIF,CMC_SFCDIF,CHC_SFCDIF,  &
                   CMGR_SFCDIF,CHGR_SFCDIF,                      &
 !Optional Urban
+                  TC2M_URB2D, TP2M_URB2D, UTCI_URB2D,           & ! JJA
                   TR_URB2D,TB_URB2D,TG_URB2D,TC_URB2D,QC_URB2D, & !H urban
-                  UC_URB2D,                                     & !H urban
+                  UC_URB2D, ANTHEAT_URB2D,                      & !H urban
                   XXXR_URB2D,XXXB_URB2D,XXXG_URB2D,XXXC_URB2D,  & !H urban
                   TRL_URB3D,TBL_URB3D,TGL_URB3D,                & !H urban
                   SH_URB2D,LH_URB2D,G_URB2D,RN_URB2D,TS_URB2D,  & !H urban
@@ -2554,6 +2557,10 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
      REAL :: COSZ_URB     ! cosz
      REAL :: OMG_URB      ! hour angle
      REAL :: ZNT_URB      ! roughness length                       [m]
+     REAL :: ANTHEAT_URB
+     REAL :: TC2M_URB
+     REAL :: TP2M_URB
+     REAL :: UTCI_URB
      REAL :: TR_URB
      REAL :: TB_URB
      REAL :: TG_URB
@@ -2612,6 +2619,11 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: RN_URB2D
 !
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TS_URB2D
+!
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TC2M_URB2D
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TP2M_URB2D
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: UTCI_URB2D
+     REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: ANTHEAT_URB2D
 
      REAL, OPTIONAL, DIMENSION( ims:ime, 1:num_roof_layers, jms:jme ), INTENT(INOUT) :: TRL_URB3D
      REAL, OPTIONAL, DIMENSION( ims:ime, 1:num_wall_layers, jms:jme ), INTENT(INOUT) :: TBL_URB3D
@@ -3449,6 +3461,10 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   TC_URB = TC_URB2D(I,J)
                   QC_URB = QC_URB2D(I,J)
                   UC_URB = UC_URB2D(I,J)
+                  TC2M_URB = TC2M_URB2D(I,J)
+                  TP2M_URB = TP2M_URB2D(I,J)
+                  UTCI_URB = UTCI_URB2D(I,J)
+                  ANTHEAT_URB = ANTHEAT_URB2D(I,J)
       
                   DO K = 1,num_roof_layers
                     TRL_URB(K) = TRL_URB3D(I,K,J)
@@ -3524,7 +3540,11 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                              ZA_URB,DECLIN_URB,COSZ_URB,OMG_URB,              & ! I
                              XLAT_URB,DELT_URB,ZNT_URB,                       & ! I
                              CHS_URB, CHS2_URB,                               & ! I
+                             TC2M_URB,                                        & ! JJA
+                             TP2M_URB,                                        & ! JJA
+                             UTCI_URB,                                        & ! JJA
                              TR_URB, TB_URB, TG_URB, TC_URB, QC_URB,UC_URB,   & ! H
+                             ANTHEAT_URB,                                     &                             
                              TRL_URB,TBL_URB,TGL_URB,                         & ! H
                              XXXR_URB, XXXB_URB, XXXG_URB, XXXC_URB,          & ! H
                              TS_URB,QS_URB,SH_URB,LH_URB,LH_KINEMATIC_URB,    & ! O
@@ -3537,7 +3557,8 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                              TGRL_URB,SMR_URB,CMGR_URB,CHGR_URB,jmonth,       & ! H
                              DRELR_URB,DRELB_URB,                             & ! H
                              DRELG_URB,FLXHUMR_URB,FLXHUMB_URB,FLXHUMG_URB)     
-      
+
+                             
 #if 0
                 IF(IPRINT) THEN
       
@@ -3597,14 +3618,14 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
 #endif
       
       ! Renew Urban State Varialbes
-      
+                  
                   TR_URB2D(I,J) = TR_URB
                   TB_URB2D(I,J) = TB_URB
                   TG_URB2D(I,J) = TG_URB
                   TC_URB2D(I,J) = TC_URB
                   QC_URB2D(I,J) = QC_URB
                   UC_URB2D(I,J) = UC_URB
-      
+
                   DO K = 1,num_roof_layers
                     TRL_URB3D(I,K,J) = TRL_URB(K)
                     SMR_URB3D(I,K,J) = SMR_URB(K)
@@ -4285,6 +4306,11 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
       
                   LSOLAR_URB = .FALSE.
       
+                  TC2M_URB = TC2M_URB2D(I,J)
+                  TP2M_URB = TP2M_URB2D(I,J)
+                  UTCI_URB = UTCI_URB2D(I,J)
+                  ANTHEAT_URB = ANTHEAT_URB2D(I,J)
+
                   TR_URB = TR_URB2D(I,J)
                   TB_URB = TB_URB2D(I,J)
                   TG_URB = TG_URB2D(I,J)
@@ -4366,7 +4392,11 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                              ZA_URB,DECLIN_URB,COSZ_URB,OMG_URB,              & ! I
                              XLAT_URB,DELT_URB,ZNT_URB,                       & ! I
                              CHS_URB, CHS2_URB,                               & ! I
+                             TC2M_URB,                                        & ! JJA
+                             TP2M_URB,                                        & ! JJA
+                             UTCI_URB,                                        & ! JJA
                              TR_URB, TB_URB, TG_URB, TC_URB, QC_URB,UC_URB,   & ! H
+                             ANTHEAT_URB,                                     &
                              TRL_URB,TBL_URB,TGL_URB,                         & ! H
                              XXXR_URB, XXXB_URB, XXXG_URB, XXXC_URB,          & ! H
                              TS_URB,QS_URB,SH_URB,LH_URB,LH_KINEMATIC_URB,    & ! O
