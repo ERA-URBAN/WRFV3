@@ -2155,7 +2155,6 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   CMR_SFCDIF,CHR_SFCDIF,CMC_SFCDIF,CHC_SFCDIF,  &
                   CMGR_SFCDIF,CHGR_SFCDIF,                      &
 !Optional Urban
-                  TC2M_URB2D, TP2M_URB2D, UTCI_URB2D,           & ! JJA
                   TR_URB2D,TB_URB2D,TG_URB2D,TC_URB2D,QC_URB2D, & !H urban
                   UC_URB2D, ANTHEAT_URB2D,                      & !H urban
                   XXXR_URB2D,XXXB_URB2D,XXXG_URB2D,XXXC_URB2D,  & !H urban
@@ -2179,6 +2178,9 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   num_road_layers, DZR, DZB, DZG,               & !I urban
                   CMCR_URB2D,TGR_URB2D,TGRL_URB3D,SMR_URB3D,    & !H urban
                   julian,julyr,                                 & !H urban
+                  tc2m_urb2d,                                   & !JJA urban
+                  tp2m_urb2d,                                   & !JJA urban
+                  utci_urb2d,                                   & !JJA urban
                   DRELR_URB2D,DRELB_URB2D,DRELG_URB2D,          & !H urban
                   FLXHUMR_URB2D,FLXHUMB_URB2D,FLXHUMG_URB2D,    & !H urban
                   FRC_URB2D,UTYPE_URB2D,                        & !O
@@ -3638,9 +3640,14 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                     TGL_URB3D(I,K,J) = TGL_URB(K)
                   END DO
 
+                  TC2M_URB2D(I,J) = TC2M_URB
+                  TP2M_URB2D(I,J) = TP2M_URB
+                  UTCI_URB2D(I,J) = UTCI_URB
+                  ANTHEAT_URB2D(I,J) = ANTHEAT_URB
+
                   TGR_URB2D(I,J) =TGR_URB 
                   CMCR_URB2D(I,J)=CMCR_URB
-            	    FLXHUMR_URB2D(I,J)=FLXHUMR_URB 
+                  FLXHUMR_URB2D(I,J)=FLXHUMR_URB 
                   FLXHUMB_URB2D(I,J)=FLXHUMB_URB
                   FLXHUMG_URB2D(I,J)=FLXHUMG_URB
                   DRELR_URB2D(I,J) = DRELR_URB 
