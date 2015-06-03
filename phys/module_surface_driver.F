@@ -2488,7 +2488,7 @@ CONTAINS
                 ,cmr_sfcdif,chr_sfcdif,cmc_sfcdif,chc_sfcdif    &
                 ,cmgr_sfcdif,chgr_sfcdif                        &
                 ,tr_urb2d,tb_urb2d,tg_urb2d,tc_urb2d,qc_urb2d,  & !H urban
-                uc_urb2d,                                       & !H urban
+                uc_urb2d, antheat_urb2d,                        & !H urban
                 xxxr_urb2d,xxxb_urb2d,xxxg_urb2d,xxxc_urb2d,    & !H urban
                 trl_urb3d,tbl_urb3d,tgl_urb3d,                  & !H urban
                 sh_urb2d,lh_urb2d,g_urb2d,rn_urb2d,ts_urb2d,    & !H urban
@@ -2510,6 +2510,9 @@ CONTAINS
                 num_road_layers, DZR, DZB, DZG,                 & !I urban
                 CMCR_URB2D,TGR_URB2D,TGRL_URB3D,SMR_URB3D,      & !H urban
                 julian,julyr,                                   & !H urban
+                tc2m_urb2d,                                     & !JJA urban
+                tp2m_urb2d,                                     & !JJA urban
+                utci_urb2d,                                     & !JJA urban
                 DRELR_URB2D,DRELB_URB2D,DRELG_URB2D,            & !H urban
                 FLXHUMR_URB2D,FLXHUMB_URB2D,FLXHUMG_URB2D,      & !H urban
                 FRC_URB2D, UTYPE_URB2D,                         & !I urban
