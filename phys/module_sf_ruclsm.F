@@ -739,7 +739,7 @@ CONTAINS
 !    endif
 
 #if (EM_CORE==1)
-     if(lakemodel==1. .and. lakemask(i,j)==1.) goto 2999
+     if(lakemodel==1 .and. lakemask(i,j)==1.) goto 2999
 !Lakes
 #endif
 
