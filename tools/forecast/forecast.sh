@@ -4,9 +4,10 @@
 set -e
 
 # setup the environment on the Cartesius
-if [ `hostname | grep -i sara`]; then
+if [ `hostname | grep -i sara` ]; then
     module load python
     module load nco
+    module load ncl
 fi
 
 # Uncomment following line for debug mode
@@ -20,28 +21,30 @@ CYCLELEN=48         # length of a forecast run in hours
 BOUNDARYINTERVAL=6  # time between boundaries, in hours
 
 # Index in netCDF file to use for copy_cycle
-CYCLEINDEX[01]=0
-CYCLEINDEX[02]=0
-CYCLEINDEX[03]=0
-CYCLEINDEX[04]=0
-CYCLEINDEX[05]=0
+CYCLEINDEX[01]=9
+CYCLEINDEX[02]=25
+CYCLEINDEX[03]=25
+CYCLEINDEX[04]=25
+
+# fields to cycle from previous run
+URBANFIELDS="TC_URB,TR_URB,TB_URB,TG_URB,TS_URB,TRL_URB,TBL_URB,TGL_URB"
+CYCLEFIELDS="TSLB,SMOIS,SH2O,SMCREL,CANWAT,TSK"
 
 # location of configuration file
 CONFIG=/home/jattema/forecast.config
 
 # working directories
-DATDIR=/home/jattema/ECMWF_OPAN
+DATDIR=/home/jattema/GFS
 WPSDIR=/home/jattema/WRF/WPS
 RUNDIR=/home/jattema/WRF/WRFV3/run
-ARCDIR=/home/jattema/archive
+#ARCDIR=/home/jattema/archive
+ARCDIR=/projects/0/sitc/archive
 
 # location of external tools
 NCDUMP=ncdump
 NC3TONC4=nc3tonc4
 TOOLS=/home/jattema/WRF/WRFV3/tools/forecast
 NAMELIST=$TOOLS/namelist.py
-COPYURBAN=$TOOLS/copy_urb_init.sh
-COPYCYCLE=$TOOLS/copy_cycle.sh
 COPYSST=$TOOLS/copy_sst_init.sh
 PREPSST=$TOOLS/prepare_sst.sh
 
@@ -56,10 +59,12 @@ Control WRF forecast runs.
 
    $0 command option
 
+download_gfs:  Download GFS boundaries from NCEP.
+
 prepare:
   all          Runs all prepare steps in order, for cycling.
   date  <date> Set the datetime for the run, also accepts special date 'next', 
-  boundaries   Download boundaries from NCEP and run ungrib, metgrid
+  boundaries   run ungrib, metgrid
   cycle <date> Copy cycle fields from the specified run, also accepts special date 'previous'
   sst <date>   Set river and sea surface temperature, defaults to yesterday
 
@@ -84,6 +89,9 @@ clean:
   all 
   input        Remove WRF boundaries
   output       Remove all WRF output files
+
+plot:
+  surface1     Make surface plots using script number one.
 
 status         Print forecast status
 "
@@ -430,7 +438,6 @@ function status {
     NEEDLE="SUCCESS COMPLETE WRF"
     grep "SUCCESS COMPLETE WRF" "$OUT" 1>/dev/null 2>&1 && WRF="done"
 
-
     echo -n "REAL:       "
     if [ "$BDY" == "done" ]; then
         echo "done"
@@ -618,6 +625,8 @@ function prepare_date {
 
     if [ "next" == $1 ]; then
         DATESTART=`date --date "$DATESTART $CYCLESTEP hours" +%F`
+    elif [ "today" == $1 ]; then
+        DATESTART=`date +%F`
     else
         DATESTART=$1
     fi
@@ -628,7 +637,7 @@ function prepare_date {
 
     # Start from a clean namelist
 
-    cp $RUNDIR/namelist.forecast $RUNDIR/namelist.input
+    cp "$RUNDIR/namelist.forecast" "$RUNDIR/namelist.input"
 
     # Set starting date
 
@@ -650,6 +659,21 @@ function prepare_date {
     $NAMELIST --set share:end_date `repeat ${YEAR}-${MONTH}-${DAY}_00:00:00 $NDOMS` $WPSDIR/namelist.wps
 }
 
+######################################################################
+# Download GFS boundaries
+# Arguments:
+#     DATE     date to download, can be 'today'
+######################################################################
+function download_gfs {
+    if [ x$1 == "x" ]; then
+        when=today
+    else
+        when="$1"
+    fi
+    BDATE=`date -d "$when" +'%Y%m%d00'`
+    mkdir -p $DATDIR/$BDATE
+    $TOOLS/get_gfs.pl data ${BDATE} 0 48 6 all all $DATDIR/$BDATE
+}
 
 ######################################################################
 # Run the standard WRF commands to make input boundaries
@@ -663,8 +687,6 @@ function prepare_boundaries {
         exit -1
     fi;
 
-    FILES=FIXME
-
     # clean start
     rm -f $WPSDIR/GRIBFILE.???
     rm -f $WPSDIR/FILE:????-??-??_??
@@ -673,8 +695,26 @@ function prepare_boundaries {
 
     rm -f $RUNDIR/prepare_boundaries.log
 
-    $WPSDIR/link_grib.csh $FILES    2>&1 >> $RUNDIR/prepare_boundaries.log
-    $WPSDIR/ungrib.exe              2>&1 >> $RUNDIR/prepare_boundaries.log
+    # starting from today's run hours 00 to 48:
+    BDATE=`date -d "today $DATESTART" +'%Y%m%d00'`
+    FILES="gfs.t00z.pgrb2.0p25.f000 gfs.t00z.pgrb2.0p25.f006 gfs.t00z.pgrb2.0p25.f012 gfs.t00z.pgrb2.0p25.f018 gfs.t00z.pgrb2.0p25.f024 gfs.t00z.pgrb2.0p25.f030 gfs.t00z.pgrb2.0p25.f036 gfs.t00z.pgrb2.0p25.f042 gfs.t00z.pgrb2.0p25.f048"
+
+    ALL_PRESENT="Yes"
+    for f in $FILES; do
+        if [ ! -f $DATDIR/$BDATE/$f ]; then
+            echo "Missing: $f"
+            ALL_PRESENT="No"
+        fi
+    done 
+
+    if [ $ALL_PRESENT == "No" ]; then 
+        printf "$0 [$LINENO]: Boundaries are missing, download them first\n"
+    fi
+
+    # convert to WRF input
+    cd "$WPSDIR"
+    $WPSDIR/link_grib.csh $DATDIR/$BDATE/  2>&1 >> $RUNDIR/prepare_boundaries.log
+    $WPSDIR/ungrib.exe               2>&1 >> $RUNDIR/prepare_boundaries.log
     $WPSDIR/metgrid.exe             2>&1 >> $RUNDIR/prepare_boundaries.log
 
     # clean up
@@ -697,7 +737,6 @@ function prepare_boundaries {
 #    RUNDIR, NDOMS
 ######################################################################
 function prepare_cycle {
-
     if [[ -z "$NDOMS" || ! -d "$RUNDIR" ]]; then
         printf "$0 [$LINENO]: NDOMS or RUNDIR not set. Aborting\n"
         exit -1
@@ -709,15 +748,16 @@ function prepare_cycle {
     fi
     archivedir $CYCLEDATE ARCDIR
 
-    for d in `seq -f '%02.0f' 1 $NDOMS`; do
-       $COPYURBAN ${ARCDIR}/wrfout_d${d}_${CYCLEDATE}_00:00:00.nc ${CYCLEINDEX[$d]} ${RUNDIR}/wrfinput_d${d}
-       $COPYCYCLE ${ARCDIR}/wrfout_d${d}_${CYCLEDATE}_00:00:00.nc ${CYCLEINDEX[$d]} ${RUNDIR}/wrfinput_d${d}
-       echo $COPYURBAN ${ARCDIR}/wrfout_d${d}_${CYCLEDATE}_00:00:00.nc ${CYCLEINDEX[$d]} ${RUNDIR}/wrfinput_d${d}
-       echo $COPYCYCLE ${ARCDIR}/wrfout_d${d}_${CYCLEDATE}_00:00:00.nc ${CYCLEINDEX[$d]} ${RUNDIR}/wrfinput_d${d}
-    done
+    CYCLEFILE="{ARCDIR}/wrfout_d${d}_${CYCLEDATE}_00:00:00.nc"
 
-    # initialize the urban fields from the input files
-    $NAMELIST --set physics:sf_urban_init_from_file .true. $WPSDIR/namelist.wps
+    if [ -f "${CYCLEFILE}" ]; then
+       for d in `seq -f '%02.0f' 1 $NDOMS`; do
+          ncks -C -A -o "${RUNDIR}/wrfinput_d${d}" -v ${URBANFIELDS} -d Time,${CYCLEINDEX[$d]} "${CYCLEFILE}" || echo "Cannot cycle urban $d"
+          ncks -C -A -o "${RUNDIR}/wrfinput_d${d}" -v ${CYCLEFIELDS} -d Time,${CYCLEINDEX[$d]} "${CYCLEFILE}" || echo "Cannot cycle soil  $d"
+       done
+    else
+        echo "Cannot find cycle file: $CYCLEFILE"
+    fi
 }
 
 ######################################################################
@@ -742,6 +782,7 @@ function prepare_sst {
         echo "Domain $d: SSTDATE is $SSTDATE" >> prepare_boundaries.log
         $PREPSST "$SSTDATE" ~/SST/domain_d${d}.grid $RUNDIR/sst_d${d}.nc
         $COPYSST $RUNDIR/sst_d${d}.nc wrfinput_d${d}
+        rm sst_d${d}.nc
     done
 }
 
@@ -757,7 +798,7 @@ function run_real {
         exit -1
     fi
     cd $RUNDIR 
-    ./real.exe 2>&1 >> prepare_boundaries.log
+    sbatch job.real
 }
 
 ######################################################################
@@ -844,14 +885,16 @@ function zip_log {
     # output filename depends on parallel / serial run
     if [ -f rsl.out.0000 ]; then
         RSL="rsl.out.0000"
+        RSLE="rsl.error.0000"
     elif [ -f rsl.out ]; then
         RSL="rsl.out"
+        RSLE="rsl.error"
     else
         printf "$0 [$LINENO]: Can't find rsl.out or rsl.out.0000, aborting\n"
         exit 1
     fi
-    FILES="$RSL $FILES"
-    CLEANUP="$RSL $CLEANUP"
+    FILES="$RSL $RSLE $FILES"
+    CLEANUP="$RSL $RSLE $CLEANUP"
 
     # check if the log files exist
     for f in $FILES; do
@@ -930,21 +973,47 @@ function zip_netcdf {
     done
 }
 
+######################################################################
+# Make plots using NCL
+# Plots are made from the archived NetCDF4 files,
+# and placed in the archive directory
+######################################################################
+function plot_surface {
+    if [ x$1 == "x" ]; then
+        when=$DATESTART
+    else
+        when="$1"
+    fi
 
+    # Check archive status
+    archivedir $when ARCHIVE
+
+    for d in `seq -f '%02.0f' 1 $NDOMS`; do
+        NCDF4="wrfout_d${d}_${when}_00:00:00.nc" 
+        ncl $TOOLS/wrf_Surface2.ncl inputfile=\"$ARCHIVE/$NCDF4\" outputfile=\"$ARCHIVE/surface_$d.png\"
+    done
+}
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #                                           M A I N
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+log "$1 $2 $3"
 
-ls_tslist  veenk 1
+# dont do parsing or processing for for those tasks
+# but immediately execute and exit
+case "$1" in
+    download_gfs)
+        download_gfs "$2"
+        exit 0
+        ;;
+    help | -h | -? )
+        help
+        exit 0
+    ;;
+esac
 
-# Immediately print help and exit
-if [[ "$1" == "help" || "$1" == "-h" || "$1" == "-?" ]]; then
-    help
-    exit 0
-fi
-
+# parse namelist file in the run directory
 forecastinit
 
 # extract options and their arguments into variables.
@@ -983,6 +1052,12 @@ case "$1" in
     ;;
     status) status ; exit
     ;;
+    plot)
+        case "$2" in
+            "surface") plot_surface $3 ;;
+            *)          echo "Plot not defined" ; exit 1 ;;
+        esac
+    ;;
     archive)
         case "$2" in
             "all")      archive_ts ; archive_netcdf ; archive_log ;;
@@ -998,4 +1073,4 @@ case "$1" in
     ;;
 esac 
 
-log "$1 $2 $3"
+log "$1 $2 $3 - SUCCESS"
