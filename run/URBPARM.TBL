@@ -56,7 +56,7 @@ AH:  90.0, 50.0, 20.0, 50.0
 #      (sf_urban_physics=1)
 #
 
-ALH:  40.0, 25.0, 20.0
+ALH:  40.0, 25.0, 20.0, 25.0
 
 #
 # FRC_URB:  Fraction of the urban landscape which does not have natural
