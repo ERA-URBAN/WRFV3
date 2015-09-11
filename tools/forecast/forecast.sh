@@ -31,21 +31,21 @@ URBANFIELDS="TC_URB,TR_URB,TB_URB,TG_URB,TS_URB,TRL_URB,TBL_URB,TGL_URB"
 CYCLEFIELDS="TSLB,SMOIS,SH2O,SMCREL,CANWAT,TSK"
 
 # location of configuration file
-CONFIG=/home/ronald/forecast.config
+CONFIG=/home/WUR/haren009/forecast.config
 
 # working directories
 #DATDIR=/data/GFS
-DATDIR=/data/github/ERA_URBAN/scripts/boundaries/ERAI
-WPSDIR=/data/github/WPS
-RUNDIR=/data/github/WRFV3/run
+DATDIR=/home/WUR/haren009/sources/ERA_URBAN/scripts/boundaries/ERAI
+WPSDIR=/home/WUR/haren009/sources/WPS
+RUNDIR=/home/WUR/haren009/sources/WRFV3/run
 #ARCDIR=/home/jattema/archive
-ARCDIR=/data/archive
-WRFDADIR=/data/github/WRFDA
-OBSDIR=/data/github/ERA_URBAN/scripts/netcdf2littler
+ARCDIR=/home/WUR/haren009/data/archive
+WRFDADIR=/home/WUR/haren009/sources/WRFDA
+OBSDIR=/home/WUR/haren009/sources/ERA_URBAN/scripts/netcdf2littler
 # location of external tools
 NCDUMP=ncdump
 NC3TONC4=nc3tonc4
-TOOLS=/data/github/WRFV3/tools/forecast
+TOOLS=/home/WUR/haren009/sources/WRFV3/tools/forecast
 NAMELIST=$TOOLS/namelist.py
 COPYSST=$TOOLS/copy_sst_init.sh
 PREPSST=$TOOLS/prepare_sst.sh
@@ -822,23 +822,23 @@ function wrfda_preprocess {
     $NAMELIST --set  record2:time_analysis "${YEAR}-${MONTH}-${DAY}_00:00:00" namelist.obsproc
     $NAMELIST --set  record2:time_window_max "${YEAR}-${MONTH}-${DAY}_01:00:00" namelist.obsproc
     # get domain information from  "$RUNDIR/namelist.input"
-    nesti=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" )
-    nestj=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" )
-    esn=$( $NAMELIST --get domains:e_sn "$RUNDIR/namelist.input" )
-    ewe=$( $NAMELIST --get domains:e_we "$RUNDIR/namelist.input" )
-    dis=$( $NAMELIST --get domains:dx "$RUNDIR/namelist.input" )  # ?correct variable?
-    numc=$( $NAMELIST --get domains:parent_id "$RUNDIR/namelist.input" )  
+    nesti=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
+    nestj=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
+    esn=$( $NAMELIST --get domains:e_sn "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
+    ewe=$( $NAMELIST --get domains:e_we "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
+    dis=$( $NAMELIST --get domains:dx "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g'  ) # ?correct variable?
+    numc=$( $NAMELIST --get domains:parent_id "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g'  )
     # DONE: FILED BUG: wrf-wur parent_id should start with 1 instead of 0, so [1,1,2,3]
 
     # write domain information in namelist.obsproc
-    $NAMELIST --set record8:nesti "${nesti:1:-1}" namelist.obsproc
-    $NAMELIST --set record8:nestj "${nestj:1:-1}" namelist.obsproc
-    $NAMELIST --set record8:nestix "${ewe:1:-1}" namelist.obsproc
-    $NAMELIST --set record8:nestjx "${esn:1:-1}" namelist.obsproc
-    $NAMELIST --set record8:numc "${numc:1:-1}" namelist.obsproc
+    $NAMELIST --set record8:nesti "${nesti}" namelist.obsproc
+    $NAMELIST --set record8:nestj "${nestj}" namelist.obsproc
+    $NAMELIST --set record8:nestix "${ewe}" namelist.obsproc
+    $NAMELIST --set record8:nestjx "${esn}" namelist.obsproc
+    $NAMELIST --set record8:numc "${numc}" namelist.obsproc
     
     # convert dx to dist in km (divide by 1000) ? divide by 1 for now
-    diskm=$( awk '{for(i=1;i<=NF;i++){$i=$i/1}}1' <<< ${dis:1:-1} | sed -e 's/ /, /g' )
+    diskm=$( awk '{for(i=1;i<=NF;i++){$i=$i/1}}1' <<< ${dis} | sed -e 's/ /, /g' )
     $NAMELIST --set record8:dis "${diskm}" namelist.obsproc  # grid size in km
 
     # info on variables: 
