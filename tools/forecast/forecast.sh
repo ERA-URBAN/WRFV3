@@ -16,8 +16,8 @@ fi
 ###########################3
 # Forecast config:
 
-CYCLESTEP=24        # time between two forecast runs in hours
-CYCLELEN=48         # length of a forecast run in hours
+CYCLESTEP=6        # time between two forecast runs in hours
+CYCLELEN=6         # length of a forecast run in hours
 BOUNDARYINTERVAL=6  # time between boundaries, in hours
 
 # Index in netCDF file to use for copy_cycle
@@ -42,6 +42,7 @@ RUNDIR=/home/WUR/haren009/sources/WRFV3/run
 ARCDIR=/home/WUR/haren009/data/archive
 WRFDADIR=/home/WUR/haren009/sources/WRFDA
 OBSDIR=/home/WUR/haren009/sources/ERA_URBAN/scripts/netcdf2littler
+WORK_DIR=${WRFDADIR}/workdir
 # location of external tools
 NCDUMP=ncdump
 NC3TONC4=nc3tonc4
@@ -80,6 +81,7 @@ wrfda:
   prepare <date>     Symlink all input files for data assimilation
   run                Run WRFDA
   updatebc           Update boundary conditions
+  updatebc_lowbc <date> Update lower boundaries only
 
 zip:
   all 
@@ -142,13 +144,12 @@ function log {
 #    day      (return) name of output variable for the day
 ######################################################################
 function splitdate {
-    dateregex="([0-9][0-9][0-9][0-9]).([0-9][0-9]).([0-9][0-9])"
-
+    dateregex="([0-9][0-9][0-9][0-9]).([0-9][0-9]).([0-9][0-9]).([0-9][0-9])"
     if [[ ! "$1" =~ $dateregex ]]; then
         printf "$0 [$LINENO]: No valid date given. Aborting.\n"
         exit 1
     fi
-    if [[ $# != 4 ]]; then
+    if [[ $# != 5 ]]; then
         printf "$0 [$LINENO]: splitdate needs exactly 4 arguments, not $#. Aborting.\n"
         exit 1
     fi
@@ -156,6 +157,7 @@ function splitdate {
     eval "$2='${BASH_REMATCH[1]}'"
     eval "$3='${BASH_REMATCH[2]}'"
     eval "$4='${BASH_REMATCH[3]}'"
+    eval "$5='${BASH_REMATCH[4]}'"
 }
 
 ######################################################################
@@ -273,7 +275,7 @@ function check_grib_version {
 function archivedir {
 
     # Construct archive directory name
-    splitdate $1 YEAR MONTH DAY
+    splitdate $1 YEAR MONTH DAY HOUR
     DEST=$ARCDIR/$YEAR/$MONTH/$DAY
 
     # Create it
@@ -631,39 +633,38 @@ function prepare_date {
     fi
 
     if [ "next" == $1 ]; then
-        DATESTART=`date --date "$DATESTART $CYCLESTEP hours" +%F`
+        splitdate $DATESTART YEAR MONTH DAY HOUR
+        DATESTART=`date --date "${YEAR}-${MONTH}-${DAY} ${HOUR} hours $CYCLESTEP hours" +%F.%H`
     elif [ "today" == $1 ]; then
-        DATESTART=`date +%F`
+        DATESTART=`date +%F%H`
     else
         DATESTART=$1
     fi
-    echo $RUNDIR
+    
     # namelist.input 
     # namelist.wps   (Format: 2006-08-16_12:00:00)
     # --------------------------------------------
 
     # Start from a clean namelist
-
     cp "$RUNDIR/namelist.forecast" "$RUNDIR/namelist.input"
 
     # Set starting date
 
-    splitdate $DATESTART YEAR MONTH DAY
-    echo "$NAMELIST --set time_control:start_year  `repeat $YEAR  $NDOMS` $RUNDIR/namelist.input"
+    splitdate $DATESTART YEAR MONTH DAY HOUR
     $NAMELIST --set time_control:start_year  `repeat $YEAR  $NDOMS` $RUNDIR/namelist.input
     $NAMELIST --set time_control:start_month `repeat $MONTH $NDOMS` $RUNDIR/namelist.input
     $NAMELIST --set time_control:start_day   `repeat $DAY   $NDOMS` $RUNDIR/namelist.input
-    $NAMELIST --set share:start_date `repeat ${YEAR}-${MONTH}-${DAY}_00:00:00 $NDOMS` $WPSDIR/namelist.wps
+    $NAMELIST --set time_control:start_hour   `repeat $HOUR   $NDOMS` $RUNDIR/namelist.input    
+    $NAMELIST --set share:start_date `repeat ${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 $NDOMS` $WPSDIR/namelist.wps
 
     # Set ending date
-    DATEEND=`date --date "$DATESTART $CYCLELEN hours" +%F`
-
-    splitdate $DATEEND YEAR MONTH DAY
+    DATEEND=`date --date "${YEAR}-${MONTH}-${DAY} ${HOUR} hours $CYCLELEN hours" +%F.%H`
+    splitdate $DATEEND YEAR MONTH DAY HOUR
     $NAMELIST --set time_control:end_year  `repeat $YEAR  $NDOMS` $RUNDIR/namelist.input
     $NAMELIST --set time_control:end_month `repeat $MONTH $NDOMS` $RUNDIR/namelist.input
     $NAMELIST --set time_control:end_day   `repeat $DAY   $NDOMS` $RUNDIR/namelist.input
-
-    $NAMELIST --set share:end_date `repeat ${YEAR}-${MONTH}-${DAY}_00:00:00 $NDOMS` $WPSDIR/namelist.wps
+    $NAMELIST --set time_control:end_hour   `repeat $HOUR   $NDOMS` $RUNDIR/namelist.input
+    $NAMELIST --set share:end_date `repeat ${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 $NDOMS` $WPSDIR/namelist.wps
 }
 
 ######################################################################
@@ -806,10 +807,10 @@ function wrfda_preprocess {
         OBSDATE=$1
     fi
     # split date in $YEAR $MONTH $DAY
-    splitdate $OBSDATE YEAR MONTH DAY
+    splitdate $OBSDATE YEAR MONTH DAY HOUR
   
     cd $WRFDADIR/var/obsproc
-    # TODO: copy clean namelist.obsproc into obsproc directory
+    cp namelist.obsproc.3dvar.wrfvar-tut namelist.obsproc
 
     # TODO: copy over observation file to $WRFDADIR/var/obsproc
     cp ${OBSDIR}/results.txt ./fort.2
@@ -818,9 +819,14 @@ function wrfda_preprocess {
     # filename observation in LITTLE_R format
     $NAMELIST --set record1:obs_gts_filename "fort.2" namelist.obsproc
     # time window & analysis time
-    $NAMELIST --set  record2:time_window_min "${YEAR}-${MONTH}-${DAY}_00:00:00" namelist.obsproc
-    $NAMELIST --set  record2:time_analysis "${YEAR}-${MONTH}-${DAY}_00:00:00" namelist.obsproc
-    $NAMELIST --set  record2:time_window_max "${YEAR}-${MONTH}-${DAY}_01:00:00" namelist.obsproc
+    $NAMELIST --set  record2:time_analysis "${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00" namelist.obsproc
+    # mindate
+    DATEMIN=`date --date "${YEAR}-${MONTH}-${DAY} ${HOUR} hours 1 hours ago" +%F.%H` # - 1hr
+    splitdate $DATEMIN YEAR MONTH DAY HOUR
+    $NAMELIST --set  record2:time_window_min "${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00" namelist.obsproc
+    DATEMAX=`date --date "${YEAR}-${MONTH}-${DAY} ${HOUR} hours 2 hours" +%F.%H` # + 2hr
+    splitdate $DATEMAX YEAR MONTH DAY HOUR
+    $NAMELIST --set  record2:time_window_max "${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00" namelist.obsproc
     # get domain information from  "$RUNDIR/namelist.input"
     nesti=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
     nestj=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
@@ -828,7 +834,6 @@ function wrfda_preprocess {
     ewe=$( $NAMELIST --get domains:e_we "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
     dis=$( $NAMELIST --get domains:dx "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g'  ) # ?correct variable?
     numc=$( $NAMELIST --get domains:parent_id "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g'  )
-    # DONE: FILED BUG: wrf-wur parent_id should start with 1 instead of 0, so [1,1,2,3]
 
     # write domain information in namelist.obsproc
     $NAMELIST --set record8:nesti "${nesti}" namelist.obsproc
@@ -850,9 +855,6 @@ function wrfda_preprocess {
 }
 
 function wrfda_prepare {
-    export WORK_DIR='/data/github/WRFDA/workdir'
-    export DAT_DIR='/data/github/testdata/'
-
     ## make sure we have a clean $WORK_DIR
     if [ -d $WORK_DIR ]; then
       rm -rf $WORK_DIR
@@ -865,26 +867,27 @@ function wrfda_prepare {
 
     ## modify namelist.input
     # variables from obsproc namelist.input 
-    tmax=$( $NAMELIST --get record2:time_window_min $WRFDADIR/var/obsproc/namelist.obsproc )
+    tmax=$( $NAMELIST --get record2:time_window_max $WRFDADIR/var/obsproc/namelist.obsproc )
     tana=$( $NAMELIST --get record2:time_analysis $WRFDADIR/var/obsproc/namelist.obsproc )
-    tmin=$( $NAMELIST --get record2:time_window_max $WRFDADIR/var/obsproc/namelist.obsproc )
+    tmin=$( $NAMELIST --get record2:time_window_min $WRFDADIR/var/obsproc/namelist.obsproc )
     $NAMELIST --set wrfvar18:analysis_date ${tana} namelist.input
     $NAMELIST --set wrfvar21:time_window_min ${tmin} namelist.input
     $NAMELIST --set wrfvar22:time_window_max ${tmax} namelist.input
 
     # variables from WRF namelist.input
     for VAR in time_control:start_year time_control:start_month \
-        time_control:start_day time_control:start_hour time_control:start_second \ time_control:end_year time_control:end_month time_control:end_day \ time_control:end_hour time_control:end_second \
+        time_control:start_day time_control:start_hour \
+        time_control:end_year time_control:end_month time_control:end_day \
+        time_control:end_hour \
         domains:e_we domains:e_sn domains:e_vert domains:dx domains:dy \
         physics:mp_physics physics:ra_lw_physics physics:ra_sw_physics \
         physics:radt physics:sf_sfclay_physics physics:sf_surface_physics \
-        physics:bl_pbl_physics physics:bldt physics:cu_physics physics:cudt\
-        physics:isfflx physics:ifsnow physics:icloud physics:surface_input_source \
-        physics:num_soil_layers physics:num_land_cat physics:sf_urban_physics; do
+        physics:bl_pbl_physics physics:cu_physics physics:cudt\
+        physics:num_soil_layers; do
+      echo $VAR
       VAR_value=$( $NAMELIST --get $VAR "$RUNDIR/namelist.input" )
       echo $VAR_value
-      case $VAR in physics:isfflx | physics:ifsnow | physics:icloud | physics:surface_input_source | \
-          physics:num_soil_layers | physics:num_land_cat | \
+      case $VAR in physics:num_soil_layers | \
           physics:sf_urban_use_wur_config | physics:sf_urban_init_from_file)
           $NAMELIST --set $VAR "${VAR_value}" namelist.input
       ;;
@@ -903,7 +906,6 @@ function wrfda_prepare {
 }
 
 function wrfda_run {
-    export WORK_DIR='/data/github/WRFDA/workdir'
     cd $WORK_DIR
     # get dynamic domain information from WRF namelist.input
     domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
@@ -925,7 +927,39 @@ function wrfda_run {
 
 function wrfda_updatebc {
     # function to update lateral boundary conditions
-    export WORK_DIR='/data/github/WRFDA/workdir'
+    cd $WORK_DIR
+    # copy over parame.in file
+    #cp $WRFDADIR/var/test/update_bc/parame.in ./ # use install instead of cp
+    cp $TOOLS/parame.in.latbc ./parame.in
+    # symlink da_update_bc.exe
+    cp $WRFDADIR/var/da/da_update_bc.exe ./
+    # copy over wrf_bdy file
+    cp ${RUNDIR}/wrfbdy_d01 ./
+    # get dynamic domain information from WRF namelist.input
+    #domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
+    # update lateral boundary conditions only needed for outer domain
+    #$NAMELIST --set control_param:wrf_input "${RUNDIR}/wrfinput_d01" parame.in
+    # run da_update_bc
+    ./da_update_bc.exe
+    # copy wrfvar_output and wrfbdy_d01 to wrfinput_d01 and wrfbdy_d01, respectively
+    cp wrfvar_output ${RUNDIR}/wrfinput_d01
+    cp wrfbdy_d01 ${RUNDIR}/wrfbdy_d01    
+}
+
+function wrfda_updatebc_lowbc {
+    if [ x$1 == x ]; then
+        OBSDATE=`date --date "$DATESTART $CYCLESTEP hours ago" +%F`
+    else
+        OBSDATE=$1
+    fi
+    # split date in $YEAR $MONTH $DAY
+    splitdate $OBSDATE YEAR MONTH DAY HOUR
+    
+    # function to update low boundary conditions
+    if [ -d $WORK_DIR ]; then
+      rm -rf $WORK_DIR
+    fi
+    mkdir $WORK_DIR
     cd $WORK_DIR
     # copy over parame.in file
     cp $WRFDADIR/var/test/update_bc/parame.in ./ # use install instead of cp
@@ -933,14 +967,20 @@ function wrfda_updatebc {
     cp $WRFDADIR/var/da/da_update_bc.exe ./
     # copy over wrf_bdy file
     cp ${RUNDIR}/wrfbdy_d01 ./
+    # copy over wrvar_input
+    cp ${RUNDIR}/wrfvar_input_d01_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
     # get dynamic domain information from WRF namelist.input
     domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
     # update lateral boundary conditions only needed for outer domain
     $NAMELIST --set control_param:wrf_input "${RUNDIR}/wrfinput_d01" parame.in
+    $NAMELIST --set control_param:da_file "./fg" parame.in
+    sed -i 's/low_bdy_only = .false./low_bdy_only = .true/' parame.in
+    sed -i 's/update_lsm = .true./update_lsm = .false./' parame.in
+    #$NAMELIST --set control_param:low_bdy_only 'true' parame.in
+    #$NAMELIST --set control_param:update_lsm "false" parame.in   
     # run da_update_bc
     ./da_update_bc.exe
-    # copy wrfvar_output and wrfbdy_d01 to wrfinput_d01 and wrfbdy_d01, respectively
-    cp wrfvar_output ${RUNDIR}/wrfinput_d01
+    # copy wrfbdy_d01 to $RUNDIR
     cp wrfbdy_d01 ${RUNDIR}/wrfbdy_d01    
 }
 
@@ -1199,6 +1239,7 @@ case "$1" in
             "prepare") wrfda_prepare $3 ;;
             "run") wrfda_run ;;
             "updatebc") wrfda_updatebc ;;
+            "updatebc_lowbc") wrfda_updatebc_lowbc $3;;
         esac
     ;;
     zip)

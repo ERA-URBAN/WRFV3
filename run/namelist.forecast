@@ -25,6 +25,8 @@
  io_form_restart                     = 2
  io_form_input                       = 2
  io_form_boundary                    = 2
+ write_input			     = .true.,.true.,.true.,.true.
+ inputout_interval                   = 360, 360, 360, 360
  debug_level                         = 0
  /
 
