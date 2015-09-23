@@ -873,6 +873,7 @@ function wrfda_prepare {
     $NAMELIST --set wrfvar18:analysis_date ${tana} namelist.input
     $NAMELIST --set wrfvar21:time_window_min ${tmin} namelist.input
     $NAMELIST --set wrfvar22:time_window_max ${tmax} namelist.input
+    $NAMELIST --set wrfvar7:cv_options 3 namelist.input
 
     # variables from WRF namelist.input
     for VAR in time_control:start_year time_control:start_month \
@@ -884,9 +885,7 @@ function wrfda_prepare {
         physics:radt physics:sf_sfclay_physics physics:sf_surface_physics \
         physics:bl_pbl_physics physics:cu_physics physics:cudt\
         physics:num_soil_layers; do
-      echo $VAR
       VAR_value=$( $NAMELIST --get $VAR "$RUNDIR/namelist.input" )
-      echo $VAR_value
       case $VAR in physics:num_soil_layers | \
           physics:sf_urban_use_wur_config | physics:sf_urban_init_from_file)
           $NAMELIST --set $VAR "${VAR_value}" namelist.input
@@ -941,8 +940,7 @@ function wrfda_updatebc {
     #$NAMELIST --set control_param:wrf_input "${RUNDIR}/wrfinput_d01" parame.in
     # run da_update_bc
     ./da_update_bc.exe
-    # copy wrfvar_output and wrfbdy_d01 to wrfinput_d01 and wrfbdy_d01, respectively
-    cp wrfvar_output ${RUNDIR}/wrfinput_d01
+    # copy over lateral boundary conditions
     cp wrfbdy_d01 ${RUNDIR}/wrfbdy_d01    
 }
 
@@ -962,13 +960,12 @@ function wrfda_updatebc_lowbc {
     mkdir $WORK_DIR
     cd $WORK_DIR
     # copy over parame.in file
-    cp $WRFDADIR/var/test/update_bc/parame.in ./ # use install instead of cp
+    cp ${TOOLS}/parame.in.lowbc ${WORK_DIR}/parame.in
     # symlink da_update_bc.exe
     cp $WRFDADIR/var/da/da_update_bc.exe ./
     # copy over wrf_bdy file
     cp ${RUNDIR}/wrfbdy_d01 ./
     # copy over wrvar_input
-    cp ${RUNDIR}/wrfvar_input_d01_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
     # get dynamic domain information from WRF namelist.input
     domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
     # update lateral boundary conditions only needed for outer domain
@@ -977,11 +974,25 @@ function wrfda_updatebc_lowbc {
     sed -i 's/low_bdy_only = .false./low_bdy_only = .true/' parame.in
     sed -i 's/update_lsm = .true./update_lsm = .false./' parame.in
     #$NAMELIST --set control_param:low_bdy_only 'true' parame.in
-    #$NAMELIST --set control_param:update_lsm "false" parame.in   
-    # run da_update_bc
-    ./da_update_bc.exe
-    # copy wrfbdy_d01 to $RUNDIR
-    cp wrfbdy_d01 ${RUNDIR}/wrfbdy_d01    
+    #$NAMELIST --set control_param:update_lsm "false" parame.in 
+
+    # get dynamic domain information from WRF namelist.input
+    domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
+    # loop over domains
+    echo $domains
+    for domain in 1 2 3; do
+      cp ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
+      # set domain
+      $NAMELIST --set control_param:domain_id ${domain} parame.in
+      # set wrf_input
+      $NAMELIST --set control_param:wrf_input ${RUNDIR}'/wrfinput_d0'${domain} parame.in
+      # set wrfoutput file for domain
+      $NAMELIST --set control_param:da_file './fg' parame.in
+      #run da_update_bc
+      ./da_update_bc.exe
+      # copy wrfoutput to wrfinput
+      cp ${WORK_DIR}/fg ${RUNDIR}/wrfinput_d0${domain}
+    done
 }
 
 ######################################################################
