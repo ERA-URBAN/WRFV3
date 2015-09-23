@@ -1,0 +1,11 @@
+&control_param
+    da_file = './wrfoutput_d01'
+    wrf_bdy_file = './wrfbdy_d01'
+    wrf_input = '/home/WUR/haren009/sources/WRFV3/run/wrfinput_d01'
+    domain_id = 1
+    cycling = .true.
+    debug = .true.
+    low_bdy_only = .true
+    update_lsm = .false.
+    var4d_lbc = .false.
+/
