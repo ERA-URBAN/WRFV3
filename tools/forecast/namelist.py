@@ -53,7 +53,14 @@ def namelist_set(filename, setvariable, setvalue, verbose=False):
         path.pop(0)
     # dealing with different types..
     t = type(crumb[path[0]])
-    if isinstance(crumb[path[0]], int):  # integer
+    if isinstance(crumb[path[0]], bool):  # boolean
+        if setvalue == '.true.':
+            crumb[ path[0] ] = True
+        elif setvalue == '.false.':
+            crumb[ path[0] ] = False
+        else:
+            print "Cannot parse boolean, use .true. or .false."
+    elif isinstance(crumb[path[0]], int):  # integer
         crumb[ path[0] ] = int(setvalue)
     elif isinstance(crumb[path[0]], float):  # float
         crumb[ path[0] ] = float(setvalue)
@@ -73,13 +80,6 @@ def namelist_set(filename, setvariable, setvalue, verbose=False):
             crumb[ path[0] ] = [float(i) for i in l]
         if isinstance(crumb[path[0]][0], str):  # string
             crumb[ path[0] ] = l
-    elif isinstance(crumb[path[0]], bool):  # boolean
-        if setvalue == '.true.':
-            crumb[ path[0] ] = True
-        elif setvalue == '.false.':
-            crumb[ path[0] ] = False
-        else:
-            print "Cannot parse boolean, use .true. or .false."
     else:
         print "Unsupported type: ", t
     # write namelist variable
