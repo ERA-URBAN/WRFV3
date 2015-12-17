@@ -16,8 +16,8 @@ fi
 ###########################3
 # Forecast config:
 
-CYCLESTEP=6        # time between two forecast runs in hours
-CYCLELEN=6         # length of a forecast run in hours
+CYCLESTEP=108        # time between two forecast runs in hours
+CYCLELEN=108      # length of a forecast run in hours
 BOUNDARYINTERVAL=6  # time between boundaries, in hours
 
 # Index in netCDF file to use for copy_cycle
@@ -41,7 +41,7 @@ RUNDIR=/home/WUR/haren009/sources/WRFV3/run
 #ARCDIR=/home/jattema/archive
 ARCDIR=/home/WUR/haren009/data/archive
 WRFDADIR=/home/WUR/haren009/sources/WRFDA
-OBSDIR=/home/WUR/haren009/sources/ERA_URBAN/scripts/netcdf2littler
+OBSDIR=/home/WUR/haren009/daobs
 WORK_DIR=${WRFDADIR}/workdir
 # location of external tools
 NCDUMP=ncdump
@@ -223,6 +223,8 @@ function forecastinit {
         exit -1
     fi;
 
+    echo "forecast init"
+    echo '$NAMELIST --get domains:max_dom "$RUNDIR/namelist.input"'
     NDOMS=`$NAMELIST --get domains:max_dom "$RUNDIR/namelist.input"`
     START_Y=`$NAMELIST --get time_control:start_year:0  "$RUNDIR/namelist.input"`
     START_M=`$NAMELIST --get time_control:start_month:0 "$RUNDIR/namelist.input"`
@@ -705,7 +707,7 @@ function prepare_boundaries {
 
     # starting from today's run hours 00 to 48:
     BDATE=`date -d "today $DATESTART" +'%Y%m%d00'`
-    echo $DATESTART
+    echo $BDATE
     #FILES="gfs.t00z.pgrb2.0p25.f000 gfs.t00z.pgrb2.0p25.f006 gfs.t00z.pgrb2.0p25.f012 gfs.t00z.pgrb2.0p25.f018 gfs.t00z.pgrb2.0p25.f024 gfs.t00z.pgrb2.0p25.f030 gfs.t00z.pgrb2.0p25.f036 gfs.t00z.pgrb2.0p25.f042 gfs.t00z.pgrb2.0p25.f048"
     FILES="interim_pl.grib interim_sfc.grib"
     ALL_PRESENT="Yes"
@@ -722,7 +724,9 @@ function prepare_boundaries {
     fi
     # convert to WRF input
     cd "$WPSDIR"
-    $WPSDIR/link_grib.csh $DATDIR/$BDATE/  2>&1     >> $RUNDIR/prepare_boundaries.log
+    echo "$WPSDIR/link_grib.csh $DATDIR/$BDATE/"
+
+    $WPSDIR/link_grib.csh $DATDIR/$BDATE/ 2>&1     >> $RUNDIR/prepare_boundaries.log
     $WPSDIR/ungrib.exe               2>&1 >> $RUNDIR/prepare_boundaries.log
     $WPSDIR/metgrid.exe             2>&1 >> $RUNDIR/prepare_boundaries.log
 
@@ -808,8 +812,8 @@ function wrfda_preprocess {
     fi
     # split date in $YEAR $MONTH $DAY
     splitdate $OBSDATE YEAR MONTH DAY HOUR
-  
     cd $WRFDADIR/var/obsproc
+    #cp ${TOOLS}/namelist.obsproc ./namelist.obsproc
     cp namelist.obsproc.3dvar.wrfvar-tut namelist.obsproc
 
     # TODO: copy over observation file to $WRFDADIR/var/obsproc
@@ -829,19 +833,19 @@ function wrfda_preprocess {
     $NAMELIST --set  record2:time_window_max "${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00" namelist.obsproc
     # get domain information from  "$RUNDIR/namelist.input"
     nesti=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
-    nestj=$( $NAMELIST --get domains:i_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
+    nestj=$( $NAMELIST --get domains:j_parent_start "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
     esn=$( $NAMELIST --get domains:e_sn "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
     ewe=$( $NAMELIST --get domains:e_we "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g' )
     dis=$( $NAMELIST --get domains:dx "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g'  ) # ?correct variable?
     numc=$( $NAMELIST --get domains:parent_id "$RUNDIR/namelist.input" | sed -e 's/\[//g' -e 's/\]//g'  )
-
+    maxnes=$( $NAMELIST --get domains:max_dom "${RUNDIR}/namelist.input")
     # write domain information in namelist.obsproc
     $NAMELIST --set record8:nesti "${nesti}" namelist.obsproc
     $NAMELIST --set record8:nestj "${nestj}" namelist.obsproc
     $NAMELIST --set record8:nestix "${ewe}" namelist.obsproc
     $NAMELIST --set record8:nestjx "${esn}" namelist.obsproc
     $NAMELIST --set record8:numc "${numc}" namelist.obsproc
-    
+    $NAMELIST --set record8:maxnes "${maxnes}" namelist.obsproc
     # convert dx to dist in km (divide by 1000) ? divide by 1 for now
     diskm=$( awk '{for(i=1;i<=NF;i++){$i=$i/1}}1' <<< ${dis} | sed -e 's/ /, /g' )
     $NAMELIST --set record8:dis "${diskm}" namelist.obsproc  # grid size in km
@@ -863,17 +867,17 @@ function wrfda_prepare {
     cd $WORK_DIR
 
     # copy namelist.input
-    cp $WRFDADIR/var/test/tutorial/namelist.input .
+    cp $WRFDADIR/var/test/tutorial/namelist.input ${WORK_DIR}/namelist.input
 
     ## modify namelist.input
     # variables from obsproc namelist.input 
     tmax=$( $NAMELIST --get record2:time_window_max $WRFDADIR/var/obsproc/namelist.obsproc )
     tana=$( $NAMELIST --get record2:time_analysis $WRFDADIR/var/obsproc/namelist.obsproc )
     tmin=$( $NAMELIST --get record2:time_window_min $WRFDADIR/var/obsproc/namelist.obsproc )
-    $NAMELIST --set wrfvar18:analysis_date ${tana} namelist.input
-    $NAMELIST --set wrfvar21:time_window_min ${tmin} namelist.input
-    $NAMELIST --set wrfvar22:time_window_max ${tmax} namelist.input
-    $NAMELIST --set wrfvar7:cv_options 3 namelist.input
+    $NAMELIST --set wrfvar18:analysis_date ${tana} ${WORK_DIR}/namelist.input
+    $NAMELIST --set wrfvar21:time_window_min ${tmin} ${WORK_DIR}/namelist.input
+    $NAMELIST --set wrfvar22:time_window_max ${tmax} ${WORK_DIR}/namelist.input
+    $NAMELIST --set wrfvar7:cv_options 3 ${WORK_DIR}/namelist.input
 
     # variables from WRF namelist.input
     for VAR in time_control:start_year time_control:start_month \
@@ -888,12 +892,12 @@ function wrfda_prepare {
       VAR_value=$( $NAMELIST --get $VAR "$RUNDIR/namelist.input" )
       case $VAR in physics:num_soil_layers | \
           physics:sf_urban_use_wur_config | physics:sf_urban_init_from_file)
-          $NAMELIST --set $VAR "${VAR_value}" namelist.input
+          $NAMELIST --set $VAR "${VAR_value}" ${WORK_DIR}/namelist.input
       ;;
       *)
           STR_ARRAY=(`echo $VAR_value | sed -e 's/\[//g' -e 's/\]//g' -e 's/,/\n/g'`)
-          $NAMELIST --set $VAR "${STR_ARRAY}" namelist.input
-        #$NAMELIST --set $VAR "${VAR_value:1:-1}" namelist.input
+          $NAMELIST --set $VAR "${STR_ARRAY}" ${WORK_DIR}/namelist.input
+        #$NAMELIST --set $VAR "${VAR_value:1:-1}" ${WORK_DIR}/namelist.input
       esac
     done
 
@@ -909,18 +913,32 @@ function wrfda_run {
     # get dynamic domain information from WRF namelist.input
     domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
     # loop over domains
-#    for domain in ${domains:1:-1}; do
-    for domain in 1; do
+    #for domain in ${domains:1:-1}; do
+    for domain in 1 2 3; do
       # symlink output of real.exe for each domain
-      ln -sf $RUNDIR/wrfinput_d0$( echo $domain | tr "," " " ) ./fg
+      #ln -sf $RUNDIR/wrfinput_d0$( echo $domain | tr "," " " ) ./fg
+      #if [ -f ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ]; then
+      #  ln -sf ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
+      #else
+      if [ -e ./fg ]; then
+        rm -rf ./fg
+      fi
+      ln -sf ${RUNDIR}/wrfinput_d0${domain} ./fg
+      #fi
+
       # set domain specific information in namelist
       for VAR in domains:e_we domains:e_sn domains:e_vert domains:dx domains:dy; do      
         VAR_value=$( $NAMELIST --get $VAR "$RUNDIR/namelist.input" )
         STR_ARRAY=(`echo $VAR_value | sed -e 's/\[//g' -e 's/\]//g' -e 's/,/\n/g'`)
-        $NAMELIST --set $VAR ${STR_ARRAY[`expr $domain - 1`]} namelist.input
-      done      
+        $NAMELIST --set $VAR ${STR_ARRAY[`expr $domain - 1`]} ${WORK_DIR}/namelist.input
+      done
+      cp namelist.input namelist_d0${domain}      
       # run da_wrfvar.exe for each domain
-      ./da_wrfvar.exe >&! log.wrfda
+      ./da_wrfvar.exe >&! log.wrfda_d0${domain}
+      # rename output
+      mv wrfvar_output wrfvar_output_d0${domain}
+      cp wrfvar_output_d0${domain} ${RUNDIR}/wrfinput_d0${domain}
+      rm ./fg
     done
 }
 
@@ -929,19 +947,22 @@ function wrfda_updatebc {
     cd $WORK_DIR
     # copy over parame.in file
     #cp $WRFDADIR/var/test/update_bc/parame.in ./ # use install instead of cp
-    cp $TOOLS/parame.in.latbc ./parame.in
+    cp $TOOLS/parame.in.latbc ${WORK_DIR}/parame.in
     # symlink da_update_bc.exe
-    cp $WRFDADIR/var/da/da_update_bc.exe ./
+    cp $WRFDADIR/var/da/da_update_bc.exe ${WORK_DIR}/
     # copy over wrf_bdy file
-    cp ${RUNDIR}/wrfbdy_d01 ./
+    cp ${RUNDIR}/wrfbdy_d01 ${WORK_DIR}/
+    # copy
     # get dynamic domain information from WRF namelist.input
     #domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
     # update lateral boundary conditions only needed for outer domain
     #$NAMELIST --set control_param:wrf_input "${RUNDIR}/wrfinput_d01" parame.in
+    cp wrfvar_output_d01 wrfvar_output_d01.bak
     # run da_update_bc
     ./da_update_bc.exe
     # copy over lateral boundary conditions
-    cp wrfbdy_d01 ${RUNDIR}/wrfbdy_d01    
+    cp wrfbdy_d01 ${RUNDIR}/wrfbdy_d01
+    #cp wrfvar_output ${RUNDIR}/wrfinput_d01
 }
 
 function wrfda_updatebc_lowbc {
@@ -964,33 +985,38 @@ function wrfda_updatebc_lowbc {
     # symlink da_update_bc.exe
     cp $WRFDADIR/var/da/da_update_bc.exe ./
     # copy over wrf_bdy file
-    cp ${RUNDIR}/wrfbdy_d01 ./
-    # copy over wrvar_input
+    #cp ${RUNDIR}/wrfbdy_d01 ./
     # get dynamic domain information from WRF namelist.input
     domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
     # update lateral boundary conditions only needed for outer domain
-    $NAMELIST --set control_param:wrf_input "${RUNDIR}/wrfinput_d01" parame.in
+    # $NAMELIST --set control_param:wrf_input "${RUNDIR}/wrfinput_d01" parame.in
     $NAMELIST --set control_param:da_file "./fg" parame.in
-    sed -i 's/low_bdy_only = .false./low_bdy_only = .true/' parame.in
-    sed -i 's/update_lsm = .true./update_lsm = .false./' parame.in
-    #$NAMELIST --set control_param:low_bdy_only 'true' parame.in
-    #$NAMELIST --set control_param:update_lsm "false" parame.in 
+    #sed -i 's/low_bdy_only = .false./low_bdy_only = .true/' parame.in
+    #sed -i 's/update_lsm = .true./update_lsm = .false./' parame.in
 
-    # get dynamic domain information from WRF namelist.input
-    domains=$( $NAMELIST --get domains:grid_id "$RUNDIR/namelist.input" )
     # loop over domains
     echo $domains
-    for domain in 1 2 3; do
-      cp ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
+    #for domain in ${domains:1:-1}; do
+    for domain in 1 2 3; do 
+      if [ -e ${WORK_DIR}/fg ]; then
+        rm -f ${WORK_DIR}/fg
+      fi
+      #cp ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
+      #cp wrfvar_output_d0${domain} ./fg # (First guess (wrfout in wrfinput format) for WRFDA
+      if [ -f ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ]; then
+        cp ${RUNDIR}/wrfvar_input_d0${domain}_${YEAR}-${MONTH}-${DAY}_${HOUR}:00:00 ./fg
+      else
+        cp ${RUNDIR}/wrfinput_d0${domain} ./fg
+      fi
+
       # set domain
       $NAMELIST --set control_param:domain_id ${domain} parame.in
-      # set wrf_input
-      $NAMELIST --set control_param:wrf_input ${RUNDIR}'/wrfinput_d0'${domain} parame.in
-      # set wrfoutput file for domain
-      $NAMELIST --set control_param:da_file './fg' parame.in
+      # set wrf_input (IC from WPS and WRF real)
+      $NAMELIST --set control_param:wrf_input ${RUNDIR}/wrfinput_d0${domain} parame.in
       #run da_update_bc
       ./da_update_bc.exe
       # copy wrfoutput to wrfinput
+      rm -f ${RUNDIR}/wrfinput_d0${domain}
       cp ${WORK_DIR}/fg ${RUNDIR}/wrfinput_d0${domain}
     done
 }
@@ -1230,15 +1256,15 @@ forecastinit
 # extract options and their arguments into variables.
 case "$1" in
     prepare)
-        case "$2" in
+	case "$2" in
             "all")        prepare_date next ; prepare_boundaries ; prepare_cycle previous ; prepare_sst ;;
-            "date")       prepare_date $3 ;;
+            "date")	  prepare_date $3 ;;
             "boundaries") prepare_boundaries ;;
-            "cycle")      prepare_cycle $3 ;;
+            "cycle")	  prepare_cycle $3 ;;
             "sst")        prepare_sst $3 ;;
         esac
     ;;
-    run) 
+    run)
         case "$2" in
             "real") run_real ;;
             "wrf")  run_wrf  ;;

@@ -60,6 +60,7 @@ def namelist_set(filename, setvariable, setvalue, verbose=False):
             crumb[ path[0] ] = False
         else:
             print "Cannot parse boolean, use .true. or .false."
+    #import pdb; pdb.set_trace()
     elif isinstance(crumb[path[0]], int):  # integer
         crumb[ path[0] ] = int(setvalue)
     elif isinstance(crumb[path[0]], float):  # float
