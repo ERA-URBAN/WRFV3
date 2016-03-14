@@ -2,20 +2,26 @@
 
 import f90nml
 import copy
-from config import config
+import argparse
 
-class enable_split_output(config):
+class enable_split_output:
   '''
-  description
+  add split output streams to a WRF namelist.input file
   '''
-  def __init__(self, namelist):
-    config.__init__(self)
+  def __init__(self, namelist, output=None):
     self.namelist = namelist
+    if output==None:
+      # save output as input filename with .out added
+      self.output = namelist + '.out'
+    else:
+      # use output file as provided by user
+      self.output = output
     self.read_namelist()
     self.create_namelist_copies()
     self.add_hourly_variables()
     self.add_minute_variables()
     self.save_output()
+
 
   def read_namelist(self):
     '''
@@ -68,7 +74,7 @@ class enable_split_output(config):
     ''' 
     write output namelist to file
     '''
-    self.nml_copy.write('namelist.forecast.out')
+    self.nml_copy.write(self.output)
 
 
   def define_dict_hourly(self):
@@ -77,75 +83,84 @@ class enable_split_output(config):
     hour
     '''
     self.hourly = {
-      100: 'MU',
-      101: 'MUB',
-      102: 'Q2',
-      103: 'T2',
-      104: 'TH2',
-      105: 'PSFC',
-      106: 'U10',
-      107: 'V10',
-      108: 'ANTHEAT2D',
-      109: 'SEAICE',
-      110: 'GRDFLX',
-      111: 'ACSNOM',
-      112: 'SNOW',
-      113: 'SNOWH',
-      114: 'CANWAT',
-      115: 'SSTSK',
-      116: 'TC2M_URB',
-      117: 'TP2M_URB',
-      118: 'UTCI_URB',
-      119: 'COSZEN',
-      120: 'LAI',
-      121: 'VAR',
-      122: 'F',
-      123: 'E',
-      124: 'HGT',
-      125: 'TSK',
-      126: 'SWDOWN',
-      127: 'GLW',
-      128: 'SWNORM',
-      129: 'ALBEDO',
-      130: 'ALBBCK',
-      131: 'EMISS',
-      132: 'NOAHRES',
-      133: 'TMN',
-      134: 'XLAND',
-      135: 'UST',
-      136: 'PBLH',
-      137: 'HFX',
-      138: 'LH',
-      139: 'SNOWC',
-      140: 'OLR',
-      141: 'SOLDRAIN',
-      142: 'SFCEXC',
-      143: 'Z0',
-      144: 'SST',
-      145: 'RAINC',
-      146: 'RAINSH',
-      150: 'U',
-      151: 'V',
-      152: 'W',
-      153: 'PH',
-      154: 'PHB',
-      155: 'T',
-      156: 'P',
-      157: 'PB',
-      158: 'P_HYD',
-      159: 'QVAPOR',
-      160: 'QCLOUD',
-      161: 'QRAIN',
-      162: 'QICE',
-      163: 'QSNOW',
-      164: 'QGRAUP',
-      165: 'CLDFRA',
-      166: 'TKE',
-      167: 'REFL_10CM',
-      168: 'TSLB',
-      169: 'SMOIS',
-      170: 'SH20',
-      171: 'SMCREL'
+      41: 'P_TOP',
+      42: 'T00',
+      43: 'P00',
+      44: 'ZETATOP',
+      45: 'ZNU',
+      46: 'ZNW',
+      47: 'ZS',
+      48: 'DZS',
+      49: 'VEGFRA',
+      50: 'MU',
+      51: 'MUB',
+      52: 'Q2',
+      53: 'T2',
+      54: 'TH2',
+      55: 'PSFC',
+      56: 'U10',
+      57: 'V10',
+      58: 'ANTHEAT2D',
+      59: 'SEAICE',
+      60: 'GRDFLX',
+      61: 'ACSNOM',
+      62: 'SNOW',
+      63: 'SNOWH',
+      64: 'CANWAT',
+      65: 'SSTSK',
+      66: 'TC2M_URB',
+      67: 'TP2M_URB',
+      68: 'UTCI_URB',
+      69: 'COSZEN',
+      70: 'LAI',
+      71: 'VAR',
+      72: 'F',
+      73: 'E',
+      74: 'HGT',
+      75: 'TSK',
+      76: 'SWDOWN',
+      77: 'GLW',
+      78: 'SWNORM',
+      79: 'ALBEDO',
+      80: 'ALBBCK',
+      81: 'EMISS',
+      82: 'NOAHRES',
+      83: 'TMN',
+      84: 'XLAND',
+      85: 'UST',
+      86: 'PBLH',
+      87: 'HFX',
+      88: 'LH',
+      89: 'SNOWC',
+      90: 'OLR',
+      91: 'SOLDRAIN',
+      92: 'SFCEXC',
+      93: 'Z0',
+      94: 'SST',
+      95: 'RAINC',
+      96: 'RAINSH',
+      100: 'U',
+      101: 'V',
+      102: 'W',
+      103: 'PH',
+      104: 'PHB',
+      105: 'T',
+      106: 'P',
+      107: 'PB',
+      108: 'P_HYD',
+      109: 'QVAPOR',
+      110: 'QCLOUD',
+      111: 'QRAIN',
+      112: 'QICE',
+      113: 'QSNOW',
+      114: 'QGRAUP',
+      115: 'CLDFRA',
+      116: 'TKE',
+      117: 'REFL_10CM',
+      118: 'TSLB',
+      119: 'SMOIS',
+      120: 'SH20',
+      121: 'SMCREL'
       }
 
 
@@ -155,17 +170,32 @@ class enable_split_output(config):
     minute for the inner domain
     '''
     self.minute = {
-      200: 'SFROFF',
-      201: 'UDROFF',
-      202: 'QFX',
-      203: 'SR',
-      204: 'RAINNC',
-      205: 'SNOWNC',
-      206: 'GRAUPELNC',
-      207: 'HAILNC'
+      125: 'SFROFF',
+      126: 'UDROFF',
+      127: 'QFX',
+      128: 'SR',
+      129: 'RAINNC',
+      130: 'SNOWNC',
+      131: 'GRAUPELNC',
+      132: 'HAILNC'
       }
 
 
+def main():
+  '''
+  define argparse menu and call enable_split_output() class
+  '''
+  parser = argparse.ArgumentParser(
+    description='add split output streams to a WRF namelist.input file')
+  parser.add_argument('input', metavar='INPUT', type=str, nargs=1,
+                      help='input namelist.input')
+  parser.add_argument('-o', '--output', type=str,
+                      help='ouput namelist.input')
+  # array of all arguments passed to script
+  args = parser.parse_args()
+  # add split output streams to a WRF namelist.input file
+  enable_split_output(args.input[0], args.output)
+
+
 if __name__=="__main__":
-  # TODO: add argparse menu
-  enable_split_output('namelist.forecast')
+  main()
