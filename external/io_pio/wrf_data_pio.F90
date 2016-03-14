@@ -15,7 +15,7 @@ module wrf_data_pio
 
   integer                , parameter      :: FATAL            = 0
   integer                , parameter      :: WARN             = 0
-  integer                , parameter      :: WrfDataHandleMax = 99
+  integer                , parameter      :: WrfDataHandleMax = 350
   integer                , parameter      :: MaxDims          = 1000 ! = NF_MAX_VARS
   integer                , parameter      :: MaxVars          = 3000
   integer                , parameter      :: MaxTimes         = 10000
