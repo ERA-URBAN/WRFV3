@@ -43,7 +43,7 @@ RECURSIVE SUBROUTINE adapt_timestep(grid, config_flags)
   double precision                           :: dt = 0
   INTEGER, PARAMETER                         :: precision = 100
   INTEGER                                    :: dt_num, dt_den, dt_whole
-  INTEGER                                    :: num, den, history_interval_sec
+  INTEGER                                    :: num, den, adaptive_interval_sec
   TYPE(WRFU_TimeInterval)                    :: last_dtInterval
   REAL                                       :: real_time
   REAL                                       :: max_vert_cfl, max_horiz_cfl
@@ -315,13 +315,14 @@ RECURSIVE SUBROUTINE adapt_timestep(grid, config_flags)
 
   if ((grid%step_to_output_time) .and. (.not. stepping_to_bc) .and. &
        (.not. grid%nested)) then
+ 
+     IF ( grid%adaptive_interval_m .EQ. 0 ) grid%adaptive_interval_m = grid%adaptive_interval
+     adaptive_interval_sec = grid%adaptive_interval_s +  grid%adaptive_interval_m*60 + &
+                            grid%adaptive_interval_h*3600 + grid%adaptive_interval_d*86400
 
-     IF ( grid%history_interval_m .EQ. 0 ) grid%history_interval_m = grid%history_interval
-     history_interval_sec = grid%history_interval_s + grid%history_interval_m*60 + &
-                            grid%history_interval_h*3600 + grid%history_interval_d*86400
 
-     time_to_output = history_interval_sec - &
-          mod( curr_secs, REAL(history_interval_sec) )
+     time_to_output = adaptive_interval_sec - &
+          mod( curr_secs, REAL(adaptive_interval_sec) )
      num = INT(time_to_output * precision + 0.5)
      den = precision
      call WRFU_TimeIntervalSet(tmpTimeInterval, Sn=num, Sd=den)
@@ -343,7 +344,7 @@ RECURSIVE SUBROUTINE adapt_timestep(grid, config_flags)
         !    we don't have any rounding error.
         !
         output_time = NINT ( (curr_secs + time_to_output) /  &
-             (history_interval_sec) ) * (history_interval_sec)
+             (adaptive_interval_sec) ) * (adaptive_interval_sec)
         CALL WRFU_TimeIntervalSet(tmpTimeInterval, S=output_time)
         dtInterval = tmpTimeInterval - &
              (domain_get_current_time(grid) - domain_get_sim_start_time(grid))

@@ -25,6 +25,7 @@ include io_boilerplate_temporary.inc
 # Output file descriptor for a domain                                           
 state   integer oid            -        -          -         -     -         "oid"                   ""         ""      
 rconfig   integer history_interval        namelist,time_control		max_domains    0       h     "history_interval"       ""      "MINUTES"
+rconfig   integer adaptive_interval        namelist,time_control         max_domains    0       h     "adaptive_interval"       ""      "MINUTES"
 rconfig   integer frames_per_outfile      namelist,time_control		max_domains    10      h     "frames_per_outfile"            ""      ""
 rconfig   logical restart                 namelist,time_control		1             .false. h    "restart"              ""      ""
 rconfig   integer restart_interval        namelist,time_control		1              0       h     "restart_interval"       ""      "MINUTES"
@@ -42,6 +43,11 @@ rconfig   integer history_interval_d      namelist,time_control		max_domains    
 rconfig   integer history_interval_h      namelist,time_control		max_domains    0       h     "history_interval_h"       ""      "HOURS"
 rconfig   integer history_interval_m      namelist,time_control		max_domains    0       h     "history_interval_m"       ""      "MINUTES"
 rconfig   integer history_interval_s      namelist,time_control		max_domains    0       h     "history_interval_s"       ""      "SECONDS"
+
+rconfig   integer adaptive_interval_d      namelist,time_control         max_domains    0       h     "adaptive_interval_d"       ""      "DAYS"
+rconfig   integer adaptive_interval_h      namelist,time_control         max_domains    0       h     "adaptive_interval_h"       ""      "HOURS"
+rconfig   integer adaptive_interval_m      namelist,time_control         max_domains    0       h     "adaptive_interval_m"       ""      "MINUTES"
+rconfig   integer adaptive_interval_s      namelist,time_control         max_domains    0       h     "adaptive_interval_s"       ""      "SECONDS"
 
 rconfig   integer inputout_interval_d      namelist,time_control	max_domains    0       h     "inputout_interval_d"       ""      "DAYS"
 rconfig   integer inputout_interval_h      namelist,time_control	max_domains    0       h     "inputout_interval_h"       ""      "HOURS"

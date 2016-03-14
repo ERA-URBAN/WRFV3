@@ -1,5 +1,5 @@
 #ifndef MAX_HISTORY
-# define MAX_HISTORY 12
+# define MAX_HISTORY 135
 #endif
 #ifndef IWORDSIZE
 # define IWORDSIZE 4
