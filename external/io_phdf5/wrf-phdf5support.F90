@@ -27,7 +27,7 @@ module wrf_phdf5_data
   use HDF5
   integer                , parameter      :: FATAL            = 1
   integer                , parameter      :: WARN             = 1
-  integer                , parameter      :: WrfDataHandleMax = 99
+  integer                , parameter      :: WrfDataHandleMax = 350
   integer                , parameter      :: MaxDims          = 2000 ! = NF_MAX_VARS
   integer                , parameter      :: MaxTabDims       = 100  ! temporary,changable
   integer                , parameter      :: MaxVars          = 2000
