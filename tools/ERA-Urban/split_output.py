@@ -57,17 +57,17 @@ class enable_split_output:
 
   def add_minute_variables(self):
     '''
-    add variables defined by define_dict_hourly(self) to namelist
+    add variables defined by define_dict_minute(self) to namelist
     '''
     self.define_dict_minute()
     max_dom = int(self.nml_copy['domains']['max_dom'])
-    for key in self.hourly.keys():
+    for key in self.minute.keys():
       self.nml_copy['time_control']['io_form_auxhist' + str(key)] = 2
       self.nml_copy['time_control']['auxhist' + str(key) + '_interval'
                                     ] = (max_dom - 1) * [60] + [1]
       self.nml_copy['time_control']['frames_per_auxhist' + str(key)] = 1000
       self.nml_copy['time_control']['auxhist' + str(key) + '_outname'
-                                    ] = self.hourly[key] + '_d<domain>_<date>'
+                                    ] = self.minute[key] + '_d<domain>_<date>'
 
 
   def save_output(self):
