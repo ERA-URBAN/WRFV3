@@ -118,10 +118,6 @@
 !..Need to fill special height var for setting up initial condition.  G. Thompson
    REAL, ALLOCATABLE, DIMENSION(:,:,:) :: z_at_q
 
-!
-! JJA From the physics namelist: initialize the urban fields from aux input
-   LOGICAL sf_urban_init_from_file
-
    CALL get_ijk_from_grid ( grid ,                              &
                            ids, ide, jds, jde, kds, kde,        &
                            ims, ime, jms, jme, kms, kme,        &
@@ -1160,22 +1156,6 @@ endif
 #if 0
 #include "CYCLE_TEST.inc"
 #endif
-
-   ! JJA Initialize multilayered urban fields from the (extra) input fields with the nectdf names: TBL_URB_IN, TRL_URB_IN, and TGL_URB_IN
-   !     NOTE: if these fields are not in the wrfinput_d? files, they are zero kelvin at this point of the program,
-   !           and obviously wrong!
-   CALL nl_get_sf_urban_init_from_file( 1, sf_urban_init_from_file)
-   IF( sf_urban_init_from_file ) THEN
-       grid%trl_urb3d=grid%trl_urb3d_in
-       grid%tbl_urb3d=grid%tbl_urb3d_in
-       grid%tgl_urb3d=grid%tgl_urb3d_in
-       CALL wrf_message( "start_em: (urban) TRL, TBL, and TGL initialized from auxiliary input" )
-   ELSE
-       CALL wrf_message( "start_em: (urban) TRL, TBL, and TGL re-initialized from boundaries" )
-   ENDIF
-   ! JJA
-!
-!
 
  !  set physical boundary conditions for all initialized variables
 
