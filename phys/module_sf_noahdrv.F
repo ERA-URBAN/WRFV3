@@ -1357,6 +1357,7 @@ CONTAINS
             TC2M_URB2D(I,J) = TC2M_URB
             TP2M_URB2D(I,J) = TP2M_URB
             UTCI_URB2D(I,J) = UTCI_URB
+            !UTCI_URB2D(I,J) = UST_URB
             ANTHEAT_URB2D(I,J) = ANTHEAT_URB
 
             TR_URB2D(I,J) = TR_URB

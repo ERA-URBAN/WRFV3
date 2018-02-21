@@ -658,7 +658,6 @@ MODULE module_sf_urban
 ! Start WUR Modification
 ! Attema, 2014/07/24
 !-------------------------------------------------------------------------------
-
   IF( UTYPE .eq. 4 ) THEN
     CALL update_param_wur(lp_urb,frc_urb,lb_urb,hgt_urb,stdh_urb,lf_urb,&
                           u1,v1,&
@@ -757,11 +756,11 @@ MODULE module_sf_urban
      XLB=0.4*(ZR-ZDC)
      ! BB formulation from Inoue (1963)
      BB = 0.4 * ZR / ( XLB * alog( ( ZR - ZDC ) / Z0C ) )
-     UC=UR*EXP(-BB*(1.-ZC/ZR))
+     UC=1.75*UR*EXP(-BB*(1.-ZC/ZR))
    ELSE
      ! PRINT *, 'Warning ZR + 2m  is larger than the 1st WRF level' 
      ZC=ZA/2.
-     UC=UA/2.
+     UC=1.75*UA/2.
    END IF
 
 !-------------------------------------------------------------------------------
@@ -927,8 +926,18 @@ MODULE module_sf_urban
        DQS0RDTR = DESDT*0.622*PS/((PS-0.378*ES)**2.) 
 
        RR=EPSR*(RX-SIG*(TRP**4.)/60.)
-       HR=RHO*CP*CHR*UA*(TRP-TA)*100.
-       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+
+       if (ahoption==1) then
+         HR=RHO*CP*CHR*UA*(TRP-TA)*100.+RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       else
+         HR=RHO*CP*CHR*UA*(TRP-TA)*100.
+       end if
+
+       if (alhoption==1) then
+         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+       else
+         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       endif
        G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
 
        F = SR + RR - HR - ELER - G0R
@@ -958,8 +967,19 @@ MODULE module_sf_urban
      QS0R=0.622*ES/(PS-0.378*ES)        
 
      RR=EPSR*(RX-SIG*(TRP**4.)/60.)
-     HR=RHO*CP*CHR*UA*(TRP-TA)*100.
-     ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+
+     if (ahoption==1) then
+       HR=RHO*CP*CHR*UA*(TRP-TA)*100.+RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
+     else
+       HR=RHO*CP*CHR*UA*(TRP-TA)*100.
+     end if
+
+     if (alhoption==1) then
+       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+     else
+       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+     endif
+
      G0R=SR+RR-HR-ELER
 
      CALL force_restore(CAPR,AKSR,DELT,SR,RR,HR,ELER,TRLEND,TRP,TR)
@@ -1223,8 +1243,13 @@ ENDIF
        DRGDTB=DRGDTB1+DRGDTB2
        DRGDTG=DRGDTG1+DRGDTG2
 
-       HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
-       HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
+       if(ahoption==1) then
+         HB=(RHO*CP*CHB*UC*(TBP-TCP)*100.)+RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         HG=(RHO*CP*CHG*UC*(TGP-TCP)*100.)+RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       else
+         HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
+         HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
+       end if
 
        DTCDTB=W*ALPHAB/(RW*ALPHAC+RW*ALPHAG+W*ALPHAB)
        DTCDTG=RW*ALPHAG/(RW*ALPHAC+RW*ALPHAG+W*ALPHAB)
@@ -1234,8 +1259,13 @@ ENDIF
        DHGDTG=RHO*CP*CHG*UC*(1.-DTCDTG)*100.
        DHGDTB=RHO*CP*CHG*UC*(0.-DTCDTB)*100.
 
-       ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
-       ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+       if(alhoption==1) then
+         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. + RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. + RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+       endif
 
        DQCDTB=W*ALPHAB*BETB*DQS0BDTB/(RW*ALPHAC+RW*ALPHAG*BETG+W*ALPHAB*BETB)
        DQCDTG=RW*ALPHAG*BETG*DQS0GDTG/(RW*ALPHAC+RW*ALPHAG*BETG+W*ALPHAB*BETB)
@@ -1326,12 +1356,31 @@ ENDIF
        RG=RG1+RG2
        RB=RB1+RB2
 
-       HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
-       ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+       if(ahoption==1) then
+         HB=RHO*CP*CHB*UC*(TBP-TCP)*100. + RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       else
+         HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
+       end if
+
+       if(alhoption==1) then
+         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. + RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+       endif
+
        G0B=SB+RB-HB-ELEB
 
-       HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
-       ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+       if (ahoption==1) then
+         HG=RHO*CP*CHG*UC*(TGP-TCP)*100. + RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       else
+         HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
+       end if
+
+       if (alhoption==1) then
+         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. + RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+       endif
        G0G=SG+RG-HG-ELEG
 
        CALL force_restore(CAPB,AKSB,DELT,SB,RB,HB,ELEB,TBLEND,TBP,TB)
@@ -1359,35 +1408,20 @@ ENDIF
    FLXTHG=HG/RHO/CP/100.
    FLXHUMG=ELEG/RHO/EL/100.
 
+    
 !-------------------------------------------------------------------------------
 ! Total Fluxes from Urban Canopy
 !-------------------------------------------------------------------------------
-!===Yang, 2014/10/08, cal. ah. alh. green roof===
+!===Yang, 2014/10/08, cal. ah. alh. green roof==
  if(groption==1) then
-   if(ahoption==1) then
-     FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG)+ AH/RHOO/CPP
-   else
-     FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG)
-   endif
-   if(alhoption==1) then
-     FLXHUM  = ((1.-FGR)*R*FLXHUMR + FGR*R*FLXHUMGR + W*FLXHUMB + RW*FLXHUMG)+ ALH/RHOO/ELL
-   else
-     FLXHUM  = ((1.-FGR)*R*FLXHUMR + FGR*R*FLXHUMGR + W*FLXHUMB + RW*FLXHUMG)
-   endif
+   FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG)
+   FLXHUM  = ((1.-FGR)*R*FLXHUMR + FGR*R*FLXHUMGR + W*FLXHUMB + RW*FLXHUMG)
    FLXUV  = ((1.-FGR)*R*CDR + FGR*R*CDGR + RW*CDC )*UA*UA
    FLXG =   ((1.-FGR)*R*G0R + FGR*R*G0GR+ W*G0B + RW*G0G)
    LNET =   (1.-FGR) * R * RR + FGR *R* RGR + W * RB +  RW * RG 
  else
-   if(ahoption==1) then
-     FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG ) + AH/RHOO/CPP
-   else
-     FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG )
-   endif
-   if(alhoption==1) then
-     FLXHUM = ( R*FLXHUMR + W*FLXHUMB + RW*FLXHUMG )+ ALH/RHOO/ELL
-   else
-     FLXHUM = ( R*FLXHUMR + W*FLXHUMB + RW*FLXHUMG )
-   endif
+   FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG )
+   FLXHUM = ( R*FLXHUMR + W*FLXHUMB + RW*FLXHUMG )
    FLXUV  = ( R*CDR + RW*CDC )*UA*UA
    FLXG =   ( R*G0R + W*G0B + RW*G0G )
    LNET =     R*RR + W*RB + RW*RG
@@ -1571,8 +1605,8 @@ ENDIF
    TMRT = sqrt( sqrt( (Ssrt / (epsilonP_mrt * SIG_SI)) ) )
 
    ! UTCI calculation
-   CALL UTCI_APPROX(TC2M, QC, TMRT, SQRT(U10**2 + V10**2),UTCI)
-
+   !CALL UTCI_APPROX(TC2M, QC, TMRT, SQRT(U10**2 + V10**2),UTCI)
+   UTCI = AH
 !   WRITE(*,*)'JJA debug: ', R,RW,TMRT,UTCI,TC2M,TP2M
 
    END SUBROUTINE urban
@@ -1868,7 +1902,7 @@ ENDIF
 
   IF(lb_urb .GT. lp_urb)THEN
    HNORM = 2. * hgt_urb * frc_urb  / (lb_urb - lp_urb)
-   HNORM = MAX( 0.01, MIN( 100.0, HNORM ) )
+   HNORM = MAX( 10.0, MIN( 100.0, HNORM ) )  ! HNORM<10.0 gives unrealist TC2M temps
   ELSE
    ! WRITE(mesg,*) 'Cannot normalize height: lb_urb is smaller than lp_urb. Setting HNORM=10.0'
    ! CALL wrf_message(mesg)
@@ -2652,21 +2686,8 @@ ENDIF
    LOGICAL :: sf_urban_use_wur_config
 
    CALL nl_get_sf_urban_use_wur_config( 1, sf_urban_use_wur_config )
+   CALL nl_get_sf_urban_init_from_file( 1, sf_urban_init_from_file )
 
-   sf_urban_init_from_file = .FALSE.
-   DO I=ims,ime
-    DO J=jms,jme
-        IF (TC_URB2D(I,J) < 200.) THEN
-            sf_urban_use_wur_config = .TRUE.
-        ENDIF
-    ENDDO
-   ENDDO
-   IF( sf_urban_use_wur_config ) THEN
-     WRITE(mesg,*) 'VALID TC_URB2D, SLUCM TEMPERATURES FROM BOUNDARIES WILL USED'
-   ELSE
-     WRITE(mesg,*) 'INVALID TC_URB2D, SLUCM TEMPERATURES WILL BE REINITIALIZED'
-   ENDIF
-   call wrf_message(mesg)
 !-------------------------------------------------------------------------------
 ! End of WUR Modification
 !------------------------------------------------------------------------
@@ -2733,13 +2754,13 @@ ENDIF
       FLXHUMG_URB2D(I,J) = 0.
       CMCR_URB2D(I,J)  = 0.
 
-      TGR_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
-      TC_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
-      TR_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
-      TB_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
-      TG_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+!      TGR_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+!      TC_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+!      TR_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+!      TB_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+!      TG_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
 !
-      TS_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+!      TS_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
 
 !-------------------------------------------------------------------------------
 ! Start WUR Modification:
@@ -2753,6 +2774,7 @@ ENDIF
       TR_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
       TB_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
       TG_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
+      TGR_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
 !
       TS_URB2D(I,J)=TSURFACE0_URB(I,J)+0.
 
