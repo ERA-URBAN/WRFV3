@@ -1606,7 +1606,7 @@ ENDIF
 
    ! UTCI calculation
    !CALL UTCI_APPROX(TC2M, QC, TMRT, SQRT(U10**2 + V10**2),UTCI)
-   UTCI = AH
+   UTCI = RLMO_CAN
 !   WRITE(*,*)'JJA debug: ', R,RW,TMRT,UTCI,TC2M,TP2M
 
    END SUBROUTINE urban
@@ -1911,7 +1911,7 @@ ENDIF
  
   ! Assign NUDAPT Parameters
 
-  ZR = MAX( 0.01, MIN(hgt_urb,100.0) )
+  ZR = MAX( 3.0, MIN(hgt_urb,100.0) )
   IF(frc_urb .GT. 0)THEN
    R = MAX( MIN(lp_urb/frc_urb, 0.9), 0.1 )
   ELSE
@@ -3021,7 +3021,7 @@ SUBROUTINE SFCDIF_URB (ZLM,Z0,THZ0,THLM,SFCSPD,AKANDA,AKMS,AKHS,RLMO,CD)
      &        (WWST = 1.2,WWST2 = WWST * WWST,G = 9.8,VKRM = 0.40,      &
      &         EXCM = 0.001                                             &
      &        ,BETA = 1./270.,BTG = BETA * G,ELFC = VKRM * BTG          &
-     &                  ,WOLD =.15,WNEW = 1. - WOLD,ITRMX = 05,         &
+     &                  ,WOLD =.15,WNEW = 1. - WOLD,ITRMX = 25,         &
      &                   PIHF = 3.14159265/2.)
       PARAMETER                                                         &
      &         (EPSU2 = 1.E-4,EPSUST = 0.07,EPSIT = 1.E-4,EPSA = 1.E-8  &
@@ -3175,7 +3175,9 @@ SUBROUTINE SFCDIF_URB (ZLM,Z0,THZ0,THLM,SFCSPD,AKANDA,AKMS,AKHS,RLMO,CD)
 !-----------------------------------------------------------------------
          RLMN = ELFC * AKHS * DTHV / USTAR **3
 !-----------------------------------------------------------------------
-!     IF(ABS((RLMN-RLMO)/RLMA).LT.EPSIT)    GO TO 110
+         IF (ABS((RLMN-RLMO)/RLMA).LT.EPSIT) THEN 
+             EXIT
+         ENDIF
 !-----------------------------------------------------------------------
          RLMA = RLMO * WOLD+ RLMN * WNEW
 !-----------------------------------------------------------------------
