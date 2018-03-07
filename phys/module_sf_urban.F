@@ -934,9 +934,9 @@ MODULE module_sf_urban
        end if
 
        if (alhoption==1) then
-         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
-       else
          ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. 
        endif
        G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
 
