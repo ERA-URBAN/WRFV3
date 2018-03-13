@@ -756,11 +756,11 @@ MODULE module_sf_urban
      XLB=0.4*(ZR-ZDC)
      ! BB formulation from Inoue (1963)
      BB = 0.4 * ZR / ( XLB * alog( ( ZR - ZDC ) / Z0C ) )
-     UC=1.75*UR*EXP(-BB*(1.-ZC/ZR))
+     UC=UR*EXP(-BB*(1.-ZC/ZR))
    ELSE
      ! PRINT *, 'Warning ZR + 2m  is larger than the 1st WRF level' 
      ZC=ZA/2.
-     UC=1.75*UA/2.
+     UC=UA/2.
    END IF
 
 !-------------------------------------------------------------------------------
