@@ -1283,11 +1283,16 @@ ENDIF
        DG0GDTG=2.*AKSG/DZG(1)
        DG0GDTB=0.
 
-       F = SB + RB - HB - ELEB - G0B
+       ! substitute HB/ELEB for counterparts without anthropogenic heat
+       !F = SB + RB - HB - ELEB - G0B
+       F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
+
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
        FY = DRBDTG - DHBDTG - DELEBDTG - DG0BDTG
 
-       GF = SG + RG - HG - ELEG - G0G
+       ! substitute HB/ELEB for counterparts without anthropogenic heat
+       ! GF = SG + RG - HG - ELEG - G0G
+       GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
        GY = DRGDTG - DHGDTG - DELEGDTG - DG0GDTG 
 
