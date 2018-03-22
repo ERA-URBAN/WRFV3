@@ -981,7 +981,7 @@ MODULE module_sf_urban
      endif
 
      G0R=SR+RR-HR-ELER
-
+     !G0R = SR + RR - (RHO*CP*CHR*UA*(TRP-TA)*100.) - (RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.)
      CALL force_restore(CAPR,AKSR,DELT,SR,RR,HR,ELER,TRLEND,TRP,TR)
 
      TRP=TR
@@ -1368,8 +1368,8 @@ ENDIF
          ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
        endif
 
-       G0B=SB+RB-HB-ELEB
-
+       !G0B=SB+RB-HB-ELEB
+       G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.)
        if (ahoption==1) then
          HG=RHO*CP*CHG*UC*(TGP-TCP)*100. + RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
@@ -1381,7 +1381,8 @@ ENDIF
        else
          ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
        endif
-       G0G=SG+RG-HG-ELEG
+       !G0G=SG+RG-HG-ELEG
+       G0G = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.)
 
        CALL force_restore(CAPB,AKSB,DELT,SB,RB,HB,ELEB,TBLEND,TBP,TB)
        CALL force_restore(CAPG,AKSG,DELT,SG,RG,HG,ELEG,TGLEND,TGP,TG)
