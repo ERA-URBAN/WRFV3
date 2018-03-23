@@ -657,11 +657,18 @@ MODULE module_sf_urban
 !-------------------------------------------------------------------------------
 ! Start WUR Modification
 ! Attema, 2014/07/24
+
 !-------------------------------------------------------------------------------
+
+   W=2.*1.*HGT
   IF( UTYPE .eq. 4 ) THEN
     CALL update_param_wur(lp_urb,frc_urb,lb_urb,hgt_urb,stdh_urb,lf_urb,&
                           u1,v1,&
                           ZR,Z0C,Z0HC,ZDC,SVF,R,RW,HGT,Z0R)
+    ! make sure W/RW >= 4 or else SLUCM misbehaves
+    IF ( (W/RW) .lt. 4 ) THEN
+      W = (4.0/(W/RW)) * W
+    ENDIF
   ENDIF
 
 !-------------------------------------------------------------------------------
@@ -695,8 +702,6 @@ MODULE module_sf_urban
    ENDIF
    SSGD = SRATIO*SSG   ! No radiation scheme has SSGD and SSGQ.
    SSGQ = SSG - SSGD
-
-   W=2.*1.*HGT
    VFGS=SVF
    VFGW=1.-SVF
    VFWG=(1.-SVF)*(1.-R)/W
@@ -1904,10 +1909,11 @@ ENDIF
    REAL :: lambda_f, lambda_fr
    REAL :: VFWS,VFGS 
 
+  ! Assign NUDAPT Parameters
+  ZR = MAX( 3.0, MIN(hgt_urb,100.0) )
   ! Calculate normalization height based on BEP formulation
-
   IF(lb_urb .GT. lp_urb)THEN
-   HNORM = 2. * hgt_urb * frc_urb  / (lb_urb - lp_urb)
+   HNORM = 2. * ZR * frc_urb  / (lb_urb - lp_urb)
    HNORM = MAX( 10.0, MIN( 100.0, HNORM ) )  ! HNORM<10.0 gives unrealist TC2M temps
   ELSE
    ! WRITE(mesg,*) 'Cannot normalize height: lb_urb is smaller than lp_urb. Setting HNORM=10.0'
@@ -1915,9 +1921,6 @@ ENDIF
    HNORM = 10.0
   ENDIF
  
-  ! Assign NUDAPT Parameters
-
-  ZR = MAX( 3.0, MIN(hgt_urb,100.0) )
   IF(frc_urb .GT. 0)THEN
    R = MAX( MIN(lp_urb/frc_urb, 0.9), 0.1 )
   ELSE
