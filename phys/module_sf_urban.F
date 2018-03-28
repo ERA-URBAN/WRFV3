@@ -1249,8 +1249,8 @@ ENDIF
        DRGDTG=DRGDTG1+DRGDTG2
 
        if(ahoption==1) then
-         HB=(RHO*CP*CHB*UC*(TBP-TCP)*100.)+RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
-         HG=(RHO*CP*CHG*UC*(TGP-TCP)*100.)+RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         HB=(RHO*CP*CHB*UC*(TBP-TCP)*100.) - RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         HG=(RHO*CP*CHG*UC*(TGP-TCP)*100.) - RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
          HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
          HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
@@ -1265,8 +1265,8 @@ ENDIF
        DHGDTB=RHO*CP*CHG*UC*(0.-DTCDTB)*100.
 
        if(alhoption==1) then
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. + RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. + RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. - RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. - RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
        else
          ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
          ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
@@ -1289,15 +1289,15 @@ ENDIF
        DG0GDTB=0.
 
        ! substitute HB/ELEB for counterparts without anthropogenic heat
-       !F = SB + RB - HB - ELEB - G0B
-       F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
+       F = SB + RB - HB - ELEB - G0B
+      ! F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
 
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
        FY = DRBDTG - DHBDTG - DELEBDTG - DG0BDTG
 
        ! substitute HB/ELEB for counterparts without anthropogenic heat
-       ! GF = SG + RG - HG - ELEG - G0G
-       GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
+       GF = SG + RG - HG - ELEG - G0G
+     !  GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
        GY = DRGDTG - DHGDTG - DELEGDTG - DG0GDTG 
 
