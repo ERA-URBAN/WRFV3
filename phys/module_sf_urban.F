@@ -623,6 +623,14 @@ MODULE module_sf_urban
    integer,parameter ::  IMPB  = 2      
    integer,parameter ::  IMPG  = 3    
 
+   ! anthropogenic (latent) heat parameters
+   real ::  AHB   ! anthropogenic heat flux wall
+   real ::  AHG   ! anthropogenic heat flux ground
+   real ::  AHR   ! anthropogenic heat flux roof
+   real ::  ALHB  ! anthropogenic latent heat flux wall
+   real ::  ALHG  ! anthropogenic latent heat flux ground
+   real ::  ALHR  ! anthropogenic latent heat flux roof
+   
 !-------------------------------------------------------------------------------
 ! Set parameters
 !-------------------------------------------------------------------------------
@@ -932,20 +940,28 @@ MODULE module_sf_urban
 
        RR=EPSR*(RX-SIG*(TRP**4.)/60.)
 
+       ! anthropogenic heat flux roof
        if (ahoption==1) then
-         HR=RHO*CP*CHR*UA*(TRP-TA)*100.+RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         AHR=RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
-         HR=RHO*CP*CHR*UA*(TRP-TA)*100.
+         AHR=0.
        end if
-
+        
+       ! heat flux roof
+       HR = RHO*CP*CHR*UA*(TRP-TA)*100.
+       
        if (alhoption==1) then
-         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ALHR = RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
        else
-         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. 
+         ALHR = 0.
        endif
+       
+       ! latent heat flux roof
+       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. 
+
        G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
 
-       F = SR + RR - HR - ELER - G0R
+       F = SR + RR - HR - ELER - G0R + AHR + ALHR
 
        DRRDTR = (-4.*EPSR*SIG*TRP**3.)/60.
        DHRDTR = RHO*CP*CHR*UA*100.
@@ -973,19 +989,24 @@ MODULE module_sf_urban
 
      RR=EPSR*(RX-SIG*(TRP**4.)/60.)
 
+     ! anthropogenic heat flux roof
      if (ahoption==1) then
-       HR=RHO*CP*CHR*UA*(TRP-TA)*100.+RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       AHR = RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
      else
-       HR=RHO*CP*CHR*UA*(TRP-TA)*100.
+       AHR = 0.
      end if
+     HR=RHO*CP*CHR*UA*(TRP-TA)*100.
 
+     ! anthropogenic latent heat flux roof
      if (alhoption==1) then
-       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       ALHR = RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
      else
-       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+       ALHR = 0.
      endif
+     
+     ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
 
-     G0R=SR+RR-HR-ELER
+     G0R=SR+RR-HR-ELER + AHR + ALHR
      !G0R = SR + RR - (RHO*CP*CHR*UA*(TRP-TA)*100.) - (RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.)
      CALL force_restore(CAPR,AKSR,DELT,SR,RR,HR,ELER,TRLEND,TRP,TR)
 
@@ -1279,18 +1300,44 @@ ENDIF
        DG0GDTB=0.
 
        ! anthropogenic heat flux walls
-       AHB = RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       if(ahoption==1) then
+          AHB = RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       else
+          AHB=0.
+       endif
 
-       F = SB + RB - HB - ELEB - G0B + AHB
+       ! anthropogenic latent heat flux walls
+       if(alhoption==1) then
+          ALHB = RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+          ALHB=0.
+       endif
+
+       ! flux walls
+       F = SB + RB - HB - ELEB - G0B + AHB + ALHB
       ! F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
 
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
        FY = DRBDTG - DHBDTG - DELEBDTG - DG0BDTG
 
-       ! substitute HB/ELEB for counterparts without anthropogenic heat
-       AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1))
-       GF = SG + RG - HG - ELEG - G0G + AHG
-     !  GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
+       ! anthropogenic heat flux ground
+       if(ahoption==1) then
+          AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1))
+       else
+          AHG = 0.
+       endif
+
+       ! anthropogenic latent heat flux ground
+       if(alhoption==1) then
+          ALHG = RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+          ALHG = 0.
+       endif
+
+       ! flux ground
+       GF = SG + RG - HG - ELEG - G0G + AHG + ALHG
+
+       !  GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
        GY = DRGDTG - DHGDTG - DELEGDTG - DG0GDTG 
 
@@ -1359,33 +1406,41 @@ ENDIF
        RG=RG1+RG2
        RB=RB1+RB2
 
-       if(ahoption==1) then
-         HB=RHO*CP*CHB*UC*(TBP-TCP)*100. + RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
-       else
-         HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
-       end if
+       HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
+       ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
 
-       if(alhoption==1) then
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. + RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       if(ahoption==1) then
+          AHB = RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+          AHB = 0.
+       endif
+       
+       if(alhoption==1) then
+         ALHB = RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+         ALHB = 0.
        endif
 
        !G0B=SB+RB-HB-ELEB
-       G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.)
+       G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) + ALB + ALHB
        if (ahoption==1) then
-         HG=RHO*CP*CHG*UC*(TGP-TCP)*100. + RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         AHG=RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
-         HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
-       end if
+         AHG = 0.
+       endif
+
+       HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
 
        if (alhoption==1) then
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. + RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ALHG = RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
        else
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+         ALHG = 0.
        endif
+
+       ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+
        !G0G=SG+RG-HG-ELEG
-       G0G = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.)
+       G0G = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) + AHG + ALHG
 
        CALL force_restore(CAPB,AKSB,DELT,SB,RB,HB,ELEB,TBLEND,TBP,TB)
        CALL force_restore(CAPG,AKSG,DELT,SG,RG,HG,ELEG,TGLEND,TGP,TG)
@@ -1565,7 +1620,9 @@ ENDIF
    END IF
    
    RAH = 1./(VKMC*SQRT(CDC*UA*UA))*(ALOG(ZA/2.)-PSIHZA+PSIH2M)
-   TC2M = TA + RAH*(W/RW*FLXTHB+FLXTHG) + AHB/(RHO*CP) + AHG/(RHO*CP)
+
+   TC2M = TA + RAH*((W/RW*FLXTHB+FLXTHG) + AHB/(RHO*CP) + AHG/(RHO*CP) + ALHB/(RHO*CP) + ALHG/(RHO*CP))
+   
    TP2M = 0 ! FIXME: implement actual formula
  
 !-------------------------------------------------------
