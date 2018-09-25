@@ -1014,7 +1014,7 @@ MODULE module_sf_urban
 
    END IF
 
-   FLXTHR=HR/RHO/CP/100. + AHR/RHO/CP/100.
+   FLXTHR=HR/RHO/CP/100.
    FLXHUMR=ELER/RHO/EL/100.
 
 !-------------------------------------------------------------------------------
@@ -1462,9 +1462,9 @@ ENDIF
    END IF
 
 
-   FLXTHB=HB/RHO/CP/100. + AHB/RHO/CP/100.
+   FLXTHB=HB/RHO/CP/100.
    FLXHUMB=ELEB/RHO/EL/100.
-   FLXTHG=HG/RHO/CP/100. + AHG/RHO/CP/100.
+   FLXTHG=HG/RHO/CP/100.
    FLXHUMG=ELEG/RHO/EL/100.
 
     
