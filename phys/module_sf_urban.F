@@ -1248,13 +1248,8 @@ ENDIF
        DRGDTB=DRGDTB1+DRGDTB2
        DRGDTG=DRGDTG1+DRGDTG2
 
-       if(ahoption==1) then
-         HB=(RHO*CP*CHB*UC*(TBP-TCP)*100.) - RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
-         HG=(RHO*CP*CHG*UC*(TGP-TCP)*100.) - RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
-       else
-         HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
-         HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
-       end if
+       HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
+       HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
 
        DTCDTB=W*ALPHAB/(RW*ALPHAC+RW*ALPHAG+W*ALPHAB)
        DTCDTG=RW*ALPHAG/(RW*ALPHAC+RW*ALPHAG+W*ALPHAB)
@@ -1264,13 +1259,8 @@ ENDIF
        DHGDTG=RHO*CP*CHG*UC*(1.-DTCDTG)*100.
        DHGDTB=RHO*CP*CHG*UC*(0.-DTCDTB)*100.
 
-       if(alhoption==1) then
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. - RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. - RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
-       else
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
-       endif
+       ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+       ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
 
        DQCDTB=W*ALPHAB*BETB*DQS0BDTB/(RW*ALPHAC+RW*ALPHAG*BETG+W*ALPHAB*BETB)
        DQCDTG=RW*ALPHAG*BETG*DQS0GDTG/(RW*ALPHAC+RW*ALPHAG*BETG+W*ALPHAB*BETB)
@@ -1288,15 +1278,18 @@ ENDIF
        DG0GDTG=2.*AKSG/DZG(1)
        DG0GDTB=0.
 
-       ! substitute HB/ELEB for counterparts without anthropogenic heat
-       F = SB + RB - HB - ELEB - G0B
+       ! anthropogenic heat flux walls
+       AHB = RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+
+       F = SB + RB - HB - ELEB - G0B + AHB
       ! F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
 
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
        FY = DRBDTG - DHBDTG - DELEBDTG - DG0BDTG
 
        ! substitute HB/ELEB for counterparts without anthropogenic heat
-       GF = SG + RG - HG - ELEG - G0G
+       AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1))
+       GF = SG + RG - HG - ELEG - G0G + AHG
      !  GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
        GY = DRGDTG - DHGDTG - DELEGDTG - DG0GDTG 
@@ -1425,13 +1418,13 @@ ENDIF
 !-------------------------------------------------------------------------------
 !===Yang, 2014/10/08, cal. ah. alh. green roof==
  if(groption==1) then
-   FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG)
+   FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG) + AH/RHOO/CPP
    FLXHUM  = ((1.-FGR)*R*FLXHUMR + FGR*R*FLXHUMGR + W*FLXHUMB + RW*FLXHUMG)
    FLXUV  = ((1.-FGR)*R*CDR + FGR*R*CDGR + RW*CDC )*UA*UA
    FLXG =   ((1.-FGR)*R*G0R + FGR*R*G0GR+ W*G0B + RW*G0G)
    LNET =   (1.-FGR) * R * RR + FGR *R* RGR + W * RB +  RW * RG 
  else
-   FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG )
+   FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG ) + AH/RHOO/CPP
    FLXHUM = ( R*FLXHUMR + W*FLXHUMB + RW*FLXHUMG )
    FLXUV  = ( R*CDR + RW*CDC )*UA*UA
    FLXG =   ( R*G0R + W*G0B + RW*G0G )
@@ -1572,7 +1565,7 @@ ENDIF
    END IF
    
    RAH = 1./(VKMC*SQRT(CDC*UA*UA))*(ALOG(ZA/2.)-PSIHZA+PSIH2M)
-   TC2M = TA + RAH*(W/RW*FLXTHB+FLXTHG)
+   TC2M = TA + RAH*(W/RW*FLXTHB+FLXTHG) + AHB/(RHO*CP) + AHG/(RHO*CP)
    TP2M = 0 ! FIXME: implement actual formula
  
 !-------------------------------------------------------
