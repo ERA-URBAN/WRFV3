@@ -1014,7 +1014,7 @@ MODULE module_sf_urban
 
    END IF
 
-   FLXTHR=HR/RHO/CP/100.
+   FLXTHR=HR/RHO/CP/100. + AHR/RHO/CP/100.
    FLXHUMR=ELER/RHO/EL/100.
 
 !-------------------------------------------------------------------------------
@@ -1422,7 +1422,7 @@ ENDIF
        endif
 
        !G0B=SB+RB-HB-ELEB
-       G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) + ALB + ALHB
+       G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) + AHB + ALHB
        if (ahoption==1) then
          AHG=RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
@@ -1462,9 +1462,9 @@ ENDIF
    END IF
 
 
-   FLXTHB=HB/RHO/CP/100.
+   FLXTHB=HB/RHO/CP/100. + AHB/RHO/CP/100.
    FLXHUMB=ELEB/RHO/EL/100.
-   FLXTHG=HG/RHO/CP/100.
+   FLXTHG=HG/RHO/CP/100. + AHG/RHO/CP/100.
    FLXHUMG=ELEG/RHO/EL/100.
 
     
@@ -1473,13 +1473,13 @@ ENDIF
 !-------------------------------------------------------------------------------
 !===Yang, 2014/10/08, cal. ah. alh. green roof==
  if(groption==1) then
-   FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG) + AH/RHOO/CPP
+   FLXTH  = ((1.-FGR)*R*FLXTHR + FGR*R*FLXTHGR + W*FLXTHB + RW*FLXTHG)
    FLXHUM  = ((1.-FGR)*R*FLXHUMR + FGR*R*FLXHUMGR + W*FLXHUMB + RW*FLXHUMG)
    FLXUV  = ((1.-FGR)*R*CDR + FGR*R*CDGR + RW*CDC )*UA*UA
    FLXG =   ((1.-FGR)*R*G0R + FGR*R*G0GR+ W*G0B + RW*G0G)
    LNET =   (1.-FGR) * R * RR + FGR *R* RGR + W * RB +  RW * RG 
  else
-   FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG ) + AH/RHOO/CPP
+   FLXTH  = ( R*FLXTHR  + W*FLXTHB  + RW*FLXTHG )
    FLXHUM = ( R*FLXHUMR + W*FLXHUMB + RW*FLXHUMG )
    FLXUV  = ( R*CDR + RW*CDC )*UA*UA
    FLXG =   ( R*G0R + W*G0B + RW*G0G )
