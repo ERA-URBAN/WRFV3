@@ -961,7 +961,7 @@ MODULE module_sf_urban
 
        G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
 
-       F = SR + RR - HR - ELER - G0R + AHR + ALHR
+       F = SR + RR - HR - ELER - G0R - AHR - ALHR
 
        DRRDTR = (-4.*EPSR*SIG*TRP**3.)/60.
        DHRDTR = RHO*CP*CHR*UA*100.
@@ -1006,8 +1006,8 @@ MODULE module_sf_urban
      
      ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
 
-     G0R=SR+RR-HR-ELER + AHR + ALHR
-
+     G0R=SR+RR-HR-ELER - AHR - ALHR
+     !G0R = SR + RR - (RHO*CP*CHR*UA*(TRP-TA)*100.) - (RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.)
      CALL force_restore(CAPR,AKSR,DELT,SR,RR,HR,ELER,TRLEND,TRP,TR)
 
      TRP=TR
@@ -1314,7 +1314,7 @@ ENDIF
        endif
 
        ! flux walls
-       F = SB + RB - HB - ELEB - G0B + AHB + ALHB
+       F = SB + RB - HB - ELEB - G0B - AHB - ALHB
       ! F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
 
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
@@ -1322,7 +1322,7 @@ ENDIF
 
        ! anthropogenic heat flux ground
        if(ahoption==1) then
-          AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1))
+          AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1)
        else
           AHG = 0.
        endif
@@ -1335,7 +1335,7 @@ ENDIF
        endif
 
        ! flux ground
-       GF = SG + RG - HG - ELEG - G0G + AHG + ALHG
+       GF = SG + RG - HG - ELEG - G0G - AHG - ALHG
 
        !  GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
@@ -1421,8 +1421,8 @@ ENDIF
          ALHB = 0.
        endif
 
-       G0B=SB+RB-HB-ELEB + AHB + ALHB
-
+       !G0B=SB+RB-HB-ELEB
+       G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - AHB - ALHB
        if (ahoption==1) then
          AHG=RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
@@ -1439,7 +1439,8 @@ ENDIF
 
        ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
 
-       G0G=SG+RG-HG-ELEG + AHG + ALHG
+       !G0G=SG+RG-HG-ELEG
+       G0G = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - AHG - ALHG
 
        CALL force_restore(CAPB,AKSB,DELT,SB,RB,HB,ELEB,TBLEND,TBP,TB)
        CALL force_restore(CAPG,AKSG,DELT,SG,RG,HG,ELEG,TGLEND,TGP,TG)
@@ -1620,8 +1621,8 @@ ENDIF
    
    RAH = 1./(VKMC*SQRT(CDC*UA*UA))*(ALOG(ZA/2.)-PSIHZA+PSIH2M)
 
-   TC2M = TA + RAH*((W/RW*FLXTHB+FLXTHG) + AHB/(RHO*CP) + AHG/(RHO*CP) + ALHB/(RHO*CP) + ALHG/(RHO*CP))
-   
+  TC2M = TA + RAH*((W/RW*FLXTHB+FLXTHG) + W/RW*AHB/RHO/CP/100 + AHG/RHO/CP/100 + W/RW*ALHB/RHO/CP/100 + ALHG/RHO/CP/100)  
+ 
    TP2M = 0 ! FIXME: implement actual formula
  
 !-------------------------------------------------------
