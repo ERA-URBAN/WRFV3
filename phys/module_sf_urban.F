@@ -623,6 +623,14 @@ MODULE module_sf_urban
    integer,parameter ::  IMPB  = 2      
    integer,parameter ::  IMPG  = 3    
 
+   ! anthropogenic (latent) heat parameters
+   real ::  AHB   ! anthropogenic heat flux wall
+   real ::  AHG   ! anthropogenic heat flux ground
+   real ::  AHR   ! anthropogenic heat flux roof
+   real ::  ALHB  ! anthropogenic latent heat flux wall
+   real ::  ALHG  ! anthropogenic latent heat flux ground
+   real ::  ALHR  ! anthropogenic latent heat flux roof
+   
 !-------------------------------------------------------------------------------
 ! Set parameters
 !-------------------------------------------------------------------------------
@@ -657,11 +665,18 @@ MODULE module_sf_urban
 !-------------------------------------------------------------------------------
 ! Start WUR Modification
 ! Attema, 2014/07/24
+
 !-------------------------------------------------------------------------------
+
+   W=2.*1.*HGT
   IF( UTYPE .eq. 4 ) THEN
     CALL update_param_wur(lp_urb,frc_urb,lb_urb,hgt_urb,stdh_urb,lf_urb,&
                           u1,v1,&
                           ZR,Z0C,Z0HC,ZDC,SVF,R,RW,HGT,Z0R)
+    ! make sure W/RW <= 8 or else SLUCM misbehaves
+    IF ( (W/RW) .gt. 8 ) THEN
+      W = (8.0/(W/RW)) * W
+    ENDIF
   ENDIF
 
 !-------------------------------------------------------------------------------
@@ -695,8 +710,6 @@ MODULE module_sf_urban
    ENDIF
    SSGD = SRATIO*SSG   ! No radiation scheme has SSGD and SSGQ.
    SSGQ = SSG - SSGD
-
-   W=2.*1.*HGT
    VFGS=SVF
    VFGW=1.-SVF
    VFWG=(1.-SVF)*(1.-R)/W
@@ -927,19 +940,26 @@ MODULE module_sf_urban
 
        RR=EPSR*(RX-SIG*(TRP**4.)/60.)
 
+       ! anthropogenic heat flux roof
        if (ahoption==1) then
-         HR=RHO*CP*CHR*UA*(TRP-TA)*100.+RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         AHR=RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
-         HR=RHO*CP*CHR*UA*(TRP-TA)*100.
+         AHR=0.
        end if
-
+        
+       ! heat flux roof
+       HR = RHO*CP*CHR*UA*(TRP-TA)*100.
+       
        if (alhoption==1) then
-         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ALHR = RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
        else
-         ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. 
+         ALHR = 0.
        endif
-       G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
+       
+       ! latent heat flux roof
+       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. 
 
+       G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
        F = SR + RR - HR - ELER - G0R
 
        DRRDTR = (-4.*EPSR*SIG*TRP**3.)/60.
@@ -968,28 +988,34 @@ MODULE module_sf_urban
 
      RR=EPSR*(RX-SIG*(TRP**4.)/60.)
 
+     ! anthropogenic heat flux roof
      if (ahoption==1) then
-       HR=RHO*CP*CHR*UA*(TRP-TA)*100.+RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       AHR = RHO*CP*(((1-RW)*(AH/RHOO/CPP))/(2*HGT+1))*100.
      else
-       HR=RHO*CP*CHR*UA*(TRP-TA)*100.
+       AHR = 0.
      end if
+     HR=RHO*CP*CHR*UA*(TRP-TA)*100.
 
+     ! anthropogenic latent heat flux roof
      if (alhoption==1) then
-       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100. + RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       ALHR = RHO*EL*(((1-RW)*(ALH/RHOO/ELL))/(2*HGT+1))*100.
      else
-       ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+       ALHR = 0.
      endif
-
-     G0R=SR+RR-HR-ELER
-
+     
+     ELER=RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.
+     
+     G0R = SR+RR-HR-ELER
+     !G0R=SR+RR-HR-ELER - AHR - ALHR
+     !G0R = SR + RR - (RHO*CP*CHR*UA*(TRP-TA)*100.) - (RHO*EL*CHR*UA*BETR*(QS0R-QA)*100.)
      CALL force_restore(CAPR,AKSR,DELT,SR,RR,HR,ELER,TRLEND,TRP,TR)
 
      TRP=TR
 
    END IF
 
-   FLXTHR=HR/RHO/CP/100.
-   FLXHUMR=ELER/RHO/EL/100.
+   FLXTHR=(HR+AHR)/RHO/CP/100.
+   FLXHUMR=(ELER+ALHR)/RHO/EL/100.
 
 !-------------------------------------------------------------------------------
 ! Green Roof
@@ -1243,13 +1269,8 @@ ENDIF
        DRGDTB=DRGDTB1+DRGDTB2
        DRGDTG=DRGDTG1+DRGDTG2
 
-       if(ahoption==1) then
-         HB=(RHO*CP*CHB*UC*(TBP-TCP)*100.)+RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
-         HG=(RHO*CP*CHG*UC*(TGP-TCP)*100.)+RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
-       else
-         HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
-         HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
-       end if
+       HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
+       HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
 
        DTCDTB=W*ALPHAB/(RW*ALPHAC+RW*ALPHAG+W*ALPHAB)
        DTCDTG=RW*ALPHAG/(RW*ALPHAC+RW*ALPHAG+W*ALPHAB)
@@ -1259,13 +1280,8 @@ ENDIF
        DHGDTG=RHO*CP*CHG*UC*(1.-DTCDTG)*100.
        DHGDTB=RHO*CP*CHG*UC*(0.-DTCDTB)*100.
 
-       if(alhoption==1) then
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. + RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. + RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
-       else
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
-       endif
+       ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+       ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
 
        DQCDTB=W*ALPHAB*BETB*DQS0BDTB/(RW*ALPHAC+RW*ALPHAG*BETG+W*ALPHAB*BETB)
        DQCDTG=RW*ALPHAG*BETG*DQS0GDTG/(RW*ALPHAC+RW*ALPHAG*BETG+W*ALPHAB*BETB)
@@ -1283,11 +1299,43 @@ ENDIF
        DG0GDTG=2.*AKSG/DZG(1)
        DG0GDTB=0.
 
+       ! anthropogenic heat flux walls
+       if(ahoption==1) then
+          AHB = RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
+       else
+          AHB=0.
+       endif
+
+       ! anthropogenic latent heat flux walls
+       if(alhoption==1) then
+          ALHB = RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+          ALHB=0.
+       endif
+
+       ! flux walls
        F = SB + RB - HB - ELEB - G0B
+
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
        FY = DRBDTG - DHBDTG - DELEBDTG - DG0BDTG
 
+       ! anthropogenic heat flux ground
+       if(ahoption==1) then
+          AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1)
+       else
+          AHG = 0.
+       endif
+
+       ! anthropogenic latent heat flux ground
+       if(alhoption==1) then
+          ALHG = RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+          ALHG = 0.
+       endif
+
+       ! flux ground
        GF = SG + RG - HG - ELEG - G0G
+
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
        GY = DRGDTG - DHGDTG - DELEGDTG - DG0GDTG 
 
@@ -1356,31 +1404,39 @@ ENDIF
        RG=RG1+RG2
        RB=RB1+RB2
 
-       if(ahoption==1) then
-         HB=RHO*CP*CHB*UC*(TBP-TCP)*100. + RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
-       else
-         HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
-       end if
+       HB=RHO*CP*CHB*UC*(TBP-TCP)*100.
+       ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
 
-       if(alhoption==1) then
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100. + RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       if(ahoption==1) then
+          AHB = RHO*CP*((2*HGT*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
-         ELEB=RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.
+          AHB = 0.
+       endif
+       
+       if(alhoption==1) then
+         ALHB = RHO*EL*((2*HGT*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+       else
+         ALHB = 0.
        endif
 
        G0B=SB+RB-HB-ELEB
-
+       !G0B = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - AHB - ALHB
        if (ahoption==1) then
-         HG=RHO*CP*CHG*UC*(TGP-TCP)*100. + RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
+         AHG=RHO*CP*((RW*(AH/RHOO/CPP))/(2*HGT+1))*100.
        else
-         HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
-       end if
+         AHG = 0.
+       endif
+
+       HG=RHO*CP*CHG*UC*(TGP-TCP)*100.
 
        if (alhoption==1) then
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100. + RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
+         ALHG = RHO*EL*((RW*(ALH/RHOO/ELL))/(2*HGT+1))*100.
        else
-         ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+         ALHG = 0.
        endif
+
+       ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
+
        G0G=SG+RG-HG-ELEG
 
        CALL force_restore(CAPB,AKSB,DELT,SB,RB,HB,ELEB,TBLEND,TBP,TB)
@@ -1403,10 +1459,10 @@ ENDIF
    END IF
 
 
-   FLXTHB=HB/RHO/CP/100.
-   FLXHUMB=ELEB/RHO/EL/100.
-   FLXTHG=HG/RHO/CP/100.
-   FLXHUMG=ELEG/RHO/EL/100.
+   FLXTHB=(HB+AHB)/RHO/CP/100. 
+   FLXHUMB=(ELEB+ALHB)/RHO/EL/100.
+   FLXTHG=(HG+AHG)/RHO/CP/100.
+   FLXHUMG=(ELEG+ALHG)/RHO/EL/100.
 
     
 !-------------------------------------------------------------------------------
@@ -1561,7 +1617,9 @@ ENDIF
    END IF
    
    RAH = 1./(VKMC*SQRT(CDC*UA*UA))*(ALOG(ZA/2.)-PSIHZA+PSIH2M)
-   TC2M = TA + RAH*(W/RW*FLXTHB+FLXTHG)
+
+   TC2M = TA + RAH*((W/RW*FLXTHB+FLXTHG) + W/RW*ALHB/RHO/CP/100 + ALHG/RHO/CP/100)  
+ 
    TP2M = 0 ! FIXME: implement actual formula
  
 !-------------------------------------------------------
@@ -1898,10 +1956,11 @@ ENDIF
    REAL :: lambda_f, lambda_fr
    REAL :: VFWS,VFGS 
 
+  ! Assign NUDAPT Parameters
+  ZR = MAX( 3.0, MIN(hgt_urb,100.0) )
   ! Calculate normalization height based on BEP formulation
-
   IF(lb_urb .GT. lp_urb)THEN
-   HNORM = 2. * hgt_urb * frc_urb  / (lb_urb - lp_urb)
+   HNORM = 2. * ZR * frc_urb  / (lb_urb - lp_urb)
    HNORM = MAX( 10.0, MIN( 100.0, HNORM ) )  ! HNORM<10.0 gives unrealist TC2M temps
   ELSE
    ! WRITE(mesg,*) 'Cannot normalize height: lb_urb is smaller than lp_urb. Setting HNORM=10.0'
@@ -1909,9 +1968,6 @@ ENDIF
    HNORM = 10.0
   ENDIF
  
-  ! Assign NUDAPT Parameters
-
-  ZR = MAX( 3.0, MIN(hgt_urb,100.0) )
   IF(frc_urb .GT. 0)THEN
    R = MAX( MIN(lp_urb/frc_urb, 0.9), 0.1 )
   ELSE
