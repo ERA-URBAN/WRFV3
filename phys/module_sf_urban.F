@@ -961,6 +961,7 @@ MODULE module_sf_urban
 
        G0R=AKSR*(TRP-TRL(1))/(DZR(1)/2.)
        F = SR + RR - HR - ELER - G0R
+       !F = SR + RR - HR - ELER - G0R - AHR - ALHR
 
        DRRDTR = (-4.*EPSR*SIG*TRP**3.)/60.
        DHRDTR = RHO*CP*CHR*UA*100.
@@ -1014,9 +1015,9 @@ MODULE module_sf_urban
 
    END IF
 
-   FLXTHR=(HR+AHR)/RHO/CP/100.
-   FLXHUMR=(ELER+ALHR)/RHO/EL/100.
-
+   FLXTHR = HR/RHO/CP/100. + (AHR/RHO/CP/100.)/R
+   FLXHUMR = ELER/RHO/EL/100. +  (ALHR/RHO/EL/100.)/R
+   
 !-------------------------------------------------------------------------------
 ! Green Roof
 ! Must use multiple layers scheme (TS_SCHEME=1)
@@ -1315,13 +1316,15 @@ ENDIF
 
        ! flux walls
        F = SB + RB - HB - ELEB - G0B
+       !F = SB + RB - HB - ELEB - G0B - AHB - ALHB
+      ! F = SB + RB - (RHO*CP*CHB*UC*(TBP-TCP)*100.) - (RHO*EL*CHB*UC*BETB*(QS0B-QCP)*100.) - G0B
 
        FX = DRBDTB - DHBDTB - DELEBDTB - DG0BDTB 
        FY = DRBDTG - DHBDTG - DELEBDTG - DG0BDTG
 
        ! anthropogenic heat flux ground
        if(ahoption==1) then
-          AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1)
+          AHG = RHO*CP*(RW*(AH/RHOO/CPP))/(2*HGT+1)*100.
        else
           AHG = 0.
        endif
@@ -1335,7 +1338,9 @@ ENDIF
 
        ! flux ground
        GF = SG + RG - HG - ELEG - G0G
+       !GF = SG + RG - HG - ELEG - G0G - AHG - ALHG
 
+       !  GF = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - G0G
        GX = DRGDTB - DHGDTB - DELEGDTB - DG0GDTB
        GY = DRGDTG - DHGDTG - DELEGDTG - DG0GDTG 
 
@@ -1438,6 +1443,7 @@ ENDIF
        ELEG=RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.
 
        G0G=SG+RG-HG-ELEG
+       !G0G = SG + RG - (RHO*CP*CHG*UC*(TGP-TCP)*100.) - (RHO*EL*CHG*UC*BETG*(QS0G-QCP)*100.) - AHG - ALHG
 
        CALL force_restore(CAPB,AKSB,DELT,SB,RB,HB,ELEB,TBLEND,TBP,TB)
        CALL force_restore(CAPG,AKSG,DELT,SG,RG,HG,ELEG,TGLEND,TGP,TG)
@@ -1459,11 +1465,12 @@ ENDIF
    END IF
 
 
-   FLXTHB=(HB+AHB)/RHO/CP/100. 
-   FLXHUMB=(ELEB+ALHB)/RHO/EL/100.
-   FLXTHG=(HG+AHG)/RHO/CP/100.
-   FLXHUMG=(ELEG+ALHG)/RHO/EL/100.
-
+   FLXTHB = HB/RHO/CP/100. + (AHB/RHO/CP/100.)/W
+   FLXHUMB=ELEB/RHO/EL/100. + (ALHB/RHO/EL/100.)/W
+   FLXTHG = HG/RHO/CP/100. + (AHG/RHO/CP/100.)/RW
+   FLXHUMG=ELEG/RHO/EL/100. + (ALHG/RHO/EL/100.)/RW
+   write(mesg,*) 'AH,AHR,AHG,AHB', AH/RHOO/CPP, AHR/RHO/CP/100., AHG/RHO/CP/100., AHB/RHO/CP/100.
+   write(mesg,*) 'ALH,ALHR,ALHG,ALHB', ALH/RHOO/ELL, ALHR/RHO/EL/100., ALHG/RHO/EL/100., ALHB/RHO/EL/100.
     
 !-------------------------------------------------------------------------------
 ! Total Fluxes from Urban Canopy
@@ -1618,8 +1625,7 @@ ENDIF
    
    RAH = 1./(VKMC*SQRT(CDC*UA*UA))*(ALOG(ZA/2.)-PSIHZA+PSIH2M)
 
-   TC2M = TA + RAH*((W/RW*FLXTHB+FLXTHG) + W/RW*ALHB/RHO/CP/100 + ALHG/RHO/CP/100)  
- 
+   TC2M = TA + RAH*((W/RW*FLXTHB+FLXTHG))
    TP2M = 0 ! FIXME: implement actual formula
  
 !-------------------------------------------------------
@@ -1664,7 +1670,7 @@ ENDIF
 
    ! UTCI calculation
    !CALL UTCI_APPROX(TC2M, QC, TMRT, SQRT(U10**2 + V10**2),UTCI)
-   UTCI = RLMO_CAN
+   UTCI = 0
 !   WRITE(*,*)'JJA debug: ', R,RW,TMRT,UTCI,TC2M,TP2M
 
    END SUBROUTINE urban
