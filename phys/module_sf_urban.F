@@ -2784,7 +2784,9 @@ ENDIF
                 call wrf_message(mesg)
 
                 UTYPE_URB = 2            ! Default: high-intensity
-             END IF         
+             END IF 
+         ELSE
+             UTYPE_URB = 2   ! Default: high-intensity       
          END IF
       ELSE IF( IVGTYP(I,J) == 31) THEN   ! low-intensity residential
          UTYPE_URB = 3
